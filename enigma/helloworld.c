@@ -94,11 +94,11 @@ void randomisePlugboard(char* swaps){
 }
 
 void notInSwaps(char* notIn, char* swaps){
-    int i, counter = 0;
+    int i, counterNIS = 0;
     for(i=0; i<26; i++){
         if (position(swaps,alphabet[i]) == -1){
-            notIn[counter] = alphabet[i];
-            counter ++;
+            notIn[counterNIS] = alphabet[i];
+            counterNIS ++;
         }
     }
     return;
@@ -106,9 +106,9 @@ void notInSwaps(char* notIn, char* swaps){
 
 void neighbours_plugboard(char* swaps, char neighbours[121][21]){
     char notIn[6],newSwaps[20], tempChar;
-    int i,j, counter = 0;
-
     notInSwaps(notIn, swaps);
+    int i,j, counterNP =0;
+
     for(i=0;i<20;i++){
         // swapping already included letters
         if(i%2 ==0){
@@ -116,8 +116,8 @@ void neighbours_plugboard(char* swaps, char neighbours[121][21]){
                 strcpy(newSwaps,swaps);
                 newSwaps[i] = swaps[j];
                 newSwaps[j] = swaps[i];
-                strcpy(neighbours[counter],newSwaps);
-                counter ++;
+                strcpy(neighbours[counterNP],newSwaps);
+                counterNP ++;
             }
         }
 
@@ -125,8 +125,8 @@ void neighbours_plugboard(char* swaps, char neighbours[121][21]){
         strcpy(newSwaps,swaps);
         for(j=0;j<6;j++){
             newSwaps[i] = notIn[j];
-            strcpy(neighbours[counter],newSwaps);
-            counter ++;
+            strcpy(neighbours[counterNP],newSwaps);
+            counterNP ++;
         }
     }
     return;
@@ -192,23 +192,59 @@ double quadgram_fitness(char* text, double frequencies[qldatasetLen], char quadg
     return sum;
 }
 
+
+void plugboardHC(char* bestSwaps,char* ciphertext){
+    char testPlaintext[strlen(ciphertext)];
+    double bestFitness, currentFitness;
+    double frequencies[qldatasetLen];
+    char quadgrams[qldatasetLen][5];
+    char neighbours[210][21];
+    char currentSwaps[21];
+    int i, stuck = 0;
+    FILE* qp = fopen("short_quadgram_log_frequency.csv", "r");
+    readQuadgramsCSV(qp,quadgrams,frequencies);
+    fclose(qp);
+
+
+    randomisePlugboard(bestSwaps);
+    plugboardEncryptor(ciphertext,testPlaintext,bestSwaps);
+    bestFitness = quadgram_fitness(testPlaintext,frequencies,quadgrams);
+
+    while (stuck == 0){
+        stuck = 1;
+        neighbours_plugboard(bestSwaps, neighbours);
+        for(i=0;i<210;i++){
+            strcpy(currentSwaps,neighbours[i]);
+            plugboardEncryptor(ciphertext,testPlaintext,currentSwaps);
+            currentFitness = quadgram_fitness(testPlaintext,frequencies,quadgrams);
+            if(bestFitness < currentFitness){
+                strcpy(bestSwaps,currentSwaps);
+                bestFitness = currentFitness;
+                stuck = 0;
+                break;
+            }
+        }
+    }
+    return;
+}
+
 int main(){
     srand((unsigned) time(NULL));
-    FILE* qp = fopen("short_quadgram_log_frequency.csv", "r");
-    
-    // variables
-    char plaintext[] = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
-    // char ciphertext[strlen(plaintext)];
-    char swaps[] = "adehgyimknlrozqvtxuw";
-    char notIn[7],neighbours[211][21],quadgrams[qldatasetLen][5];
-    double frequencies[qldatasetLen];
-    readQuadgramsCSV(qp,quadgrams,frequencies);
-    // int temp = inQuadgramsSearch(quadgrams,"zzle");
-    // printf("%d", temp);
-    // printf("%s", quadgrams[temp]);
-    printf("%lf", quadgram_fitness(plaintext,frequencies,quadgrams));
 
-    fclose(qp); 
+    // variables
+    int i;
+    char plaintext[] = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
+    char ciphertext[strlen(plaintext)];
+    char bestSwaps[] = "abcdefghijklmnopqrst";
+
+    // encrypt
+    plugboardEncryptor(plaintext,ciphertext,"adehgyimknlrozqvtxuw");
+
+    // hill climb
+    plugboardHC(bestSwaps,ciphertext);
+    printf("\n%s", bestSwaps);
+
+ 
     return 0;
 }
 
