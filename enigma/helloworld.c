@@ -4,8 +4,43 @@
 #include <time.h>
 #include <math.h>
 char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+int qldatasetLen = 40629;
 
 
+void readQuadgramsCSV(FILE *fp, char quadgrams[qldatasetLen][5], double frequencies[qldatasetLen]){
+    char buffer[100];
+    int row = 0;
+    int column = 0, numLen = 0;
+
+ 
+        while (fgets(buffer,100, fp)) {
+            column = 0;
+            char* value = strtok(buffer, ", ");
+            if (row==0){
+                row++;
+                continue;
+            }
+            while (value) {
+                // quadgram
+                if (column == 0) {
+                    strcpy(quadgrams[row -1], value);
+                }
+ 
+                // frequencies
+                if (column == 1) {
+                    char *uptr;
+                    double numValue = strtod(value, &uptr);
+                    frequencies[row-1] = numValue;
+                }
+                value = strtok(NULL, ", ");
+                column++;
+            }
+            row++;
+        }
+ 
+ 
+    return; 
+}
 
 int position(char* referenceString, char currentharacter){
     // returns first position in string
@@ -97,26 +132,83 @@ void neighbours_plugboard(char* swaps, char neighbours[121][21]){
     return;
 }
 
+int quadgramComparison(char actualQ[5], char comparisonQ[5]){
+    int i;
+    for(i=0;i<4;i++){
+        if (actualQ[i] == comparisonQ[i]){
+            continue;
+        }
+        else if(position(alphabet,actualQ[i]) > position(alphabet,comparisonQ[i])){
+            // infront
+            return 1;
+        }
+        else{
+            // behind
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int inQuadgramsSearch(char quadgrams[qldatasetLen][5], char quadgram[5]){
+    int difference, first = 0, last = qldatasetLen-1;
+    int middle = last/2;
+    while(first <= last){
+        difference = quadgramComparison(quadgrams[middle], quadgram);
+        if(difference ==0){
+            return middle;
+        }
+        else if (difference == 1){
+            last = middle - 1;
+        }
+        else {
+            first = middle + 1;
+        }
+        middle = (first + last)/2;
+    }
+    if (first > last){
+        return -1;
+    }
+
+}
+
+double quadgram_fitness(char* text, double frequencies[qldatasetLen], char quadgrams[qldatasetLen][5]){
+    int i,j, index = 0;
+    double sum = 0.;
+    char currentQuadgram[5];
+    for(i=0;i<(strlen(text)-3);i++){
+        for(j=0;j<4;j++){
+            currentQuadgram[j] = text[i+j];
+        }
+        index = inQuadgramsSearch(quadgrams,currentQuadgram);
+        if(index != -1){
+            sum += frequencies[index];
+        }
+        else {
+            sum += -4.000000000000196;
+        }
+    }
+    
+    return sum;
+}
+
 int main(){
     srand((unsigned) time(NULL));
+    FILE* qp = fopen("short_quadgram_log_frequency.csv", "r");
+    
     // variables
-    // char plaintext[] = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
+    char plaintext[] = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
     // char ciphertext[strlen(plaintext)];
     char swaps[] = "adehgyimknlrozqvtxuw";
-    char notIn[7];
-    char neighbours[211][21];
+    char notIn[7],neighbours[211][21],quadgrams[qldatasetLen][5];
+    double frequencies[qldatasetLen];
+    readQuadgramsCSV(qp,quadgrams,frequencies);
+    // int temp = inQuadgramsSearch(quadgrams,"zzle");
+    // printf("%d", temp);
+    // printf("%s", quadgrams[temp]);
+    printf("%lf", quadgram_fitness(plaintext,frequencies,quadgrams));
 
-    // plugboard_encryptor(plaintext,ciphertext, swaps);
-    // printf("%s",plaintext);
-    // printf("\n%s",ciphertext);
-    //randomisePlugboard(swaps);
-    neighbours_plugboard(swaps, neighbours);
-    int i,j, counter =0;
-    for(i=0;i<210;i++){
-        counter ++;
-        printf("\n%s",neighbours[i]);
-    }
-    printf("\n%d", counter);
+    fclose(qp); 
     return 0;
 }
 
