@@ -192,8 +192,8 @@ double quadgram_fitness(char* text, double frequencies[qldatasetLen], char quadg
     return sum;
 }
 
-
-void plugboardHC(char* bestSwaps,char* ciphertext){
+int plugboardHC(char* bestSwaps,char* ciphertext){
+    int timeCount = 0;
     char testPlaintext[strlen(ciphertext)];
     double bestFitness, currentFitness;
     double frequencies[qldatasetLen];
@@ -216,6 +216,7 @@ void plugboardHC(char* bestSwaps,char* ciphertext){
         for(i=0;i<210;i++){
             strcpy(currentSwaps,neighbours[i]);
             plugboardEncryptor(ciphertext,testPlaintext,currentSwaps);
+            timeCount++;
             currentFitness = quadgram_fitness(testPlaintext,frequencies,quadgrams);
             if(bestFitness < currentFitness){
                 strcpy(bestSwaps,currentSwaps);
@@ -225,7 +226,27 @@ void plugboardHC(char* bestSwaps,char* ciphertext){
             }
         }
     }
-    return;
+    return timeCount;
+}
+
+int plugboardComparison(char* actualSwaps, char* HCswaps){
+    int i, pos;
+    for(i=0;i<20;i+= 2){
+        pos = position(HCswaps, actualSwaps[i]);
+        if(pos == -1){
+            return -1;
+        }else if (pos % 2 == 0){
+            if (HCswaps[pos+1] != actualSwaps[i+1]){
+                return -1;
+            }
+        }else{
+            if (HCswaps[pos-1] != actualSwaps[i+1]){
+                return -1;
+            }
+
+        }
+    }
+    return 1;
 }
 
 int main(){
@@ -233,7 +254,7 @@ int main(){
 
     // variables
     int i;
-    char plaintext[] = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
+    char plaintext[] = "dearmrrogersyouwillneverknowhowrelievediamtohearthatthelibrarywillremainintactandhereatthemanoriknowthatyouwerekeentosupportourcityinitsambitiontorivalnewyorkwithitsastorandlennoxlibrariesbuttogetherwehavespentconsiderableeffortbuildingauniquecollectionofrareandimportantworksandiwouldhavebeendeeplysaddenedtoloseitiwastouchedbyyouroffertomakeitaconditionofthedonationthatishouldcontinuetobeemployedasthecuratorbutthemanorismyhomeaswellasmyworkplaceanditfeelsrightthatthisimportantcollectionofrarebooksshouldremainhereinprivatehandswhereicancareforitproperlyiamsorrytohearthatyouwillbewithdrawingfromtheraceforgovernorasiknowthatwasacherishedambitioniamsureyouwouldhavefilledtherolewithdistinctionbuttherewillbeotherwaystoserveandithinkyouarerightthatthestrangedeathofstanleyisleswouldhaveunderminedyourcampaignweknowwhatgossipcandointhesmallworldofrhodeislandsocietyandyouropponentswouldhavetakengreatpleasureinspeculatingontheunexplaineddeathinyourhomeasyourequestedihavecompletedmyauditofthelibrarycontentsandicanassureyouthatnothingismissingandnobookshavebeenharmediwillofcoursecontinuetoprotectthemandihopeyouwillagreethatitisworthcontinuingtoinvestinthecollectiontogetherwecanbuilditintooneofthefinestarchivesofamericanliteratureontheeastcoastiunderstandthatyourniecenancywillbevisitingnextweekandilookforwardtoseeingheragainwhileshedoesnotshareourloveoffinebooksshecertainlylovesthishouseandiamsureshewillhaveherownideasabouthowtofreshenitupiremainaloyalservanttoyouandtothelibrarymaisie";
     char ciphertext[strlen(plaintext)];
     char bestSwaps[] = "abcdefghijklmnopqrst";
 
@@ -241,8 +262,16 @@ int main(){
     plugboardEncryptor(plaintext,ciphertext,"adehgyimknlrozqvtxuw");
 
     // hill climb
-    plugboardHC(bestSwaps,ciphertext);
-    printf("\n%s", bestSwaps);
+    // clock_t start = clock(), diff;
+    for(i=0;i<1000;i++){
+        int timeCount = plugboardHC(bestSwaps,ciphertext);
+        if (plugboardComparison("adehgyimknlrozqvtxuw",bestSwaps) == 1){
+            printf(",%d",timeCount);
+        }
+    }
+    // diff = clock() - start;
+    // int msec = diff * 1000 / CLOCKS_PER_SEC;
+    // printf("\nTime taken %d seconds %d milliseconds", msec/1000, msec%1000);
 
  
     return 0;
