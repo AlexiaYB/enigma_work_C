@@ -1,7 +1,15 @@
 // imports
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iterator>
+#include <map>
 using namespace std;
 const string alphabet = "abcdefghijklmnopqrstuvwxyz";
+const int qlDatasetLen = 40629;
+// file data
+string qStrings[qlDatasetLen];
+double qFrequencies[qlDatasetLen];
 
 // rotor constants
 // add/minus 1 please
@@ -12,8 +20,7 @@ const int wheels[5][26] = {{4, 9, 10, 2, 7, 1, 23, 9, 13, 16, 3, 8, 2, 9, 10, 18
                         {4, 17, 12, 18, 11, 20, 3, 19, 16, 7, 10, 23, 5, 20, 9, 22, 23, 14, 1, 13, 16, 8, 6, 15, 24, 2},
                         {21, 24, 25, 14, 2, 3, 13, 17, 12, 6, 8, 18, 1, 20, 23, 8, 10, 5, 20, 16, 22, 19, 9, 7, 4, 11}};
 const string wheelsAlphabet[] = {"ekmflgdqvzntowyhxuspaibrcj","ajdksiruxblhwtmcqgznpyfvoe", "bdfhjlcprtxvznyeiwgakmusqo", "esovpzjayquirhxlnftgkdcmwb", "vzbrgityupsdnhlxawmjqofeck"};
-
-
+multimap<double, string> rotorKeys;
 
 int position(string referenceString, char currentCharacter){
     // returns first position in string
@@ -25,6 +32,89 @@ int position(string referenceString, char currentCharacter){
         }
     }
     return -1;
+}
+
+
+void readQuadgramsCSV(){
+    ifstream qFile("short_quadgram_log_frequency.csv"); 
+    string text;
+    int column= 0, row = 0;
+    while (getline(qFile, text, '\n')) {
+        if (column != 0){
+            stringstream ss(text); 
+            while (getline(ss, text, ',')){
+                if (row==0){
+                    qStrings[column -1 ] = text;
+                }
+                else{
+                    qFrequencies[column - 1] = stod(text);
+                }
+                row ++;
+            }
+        }
+        column ++;
+        row = 0;
+    }
+
+    qFile.close();
+    return;
+}
+
+int quadgramComparison(string actualQ, string comparisonQ){
+    int i;
+    for(i=0;i<4;i++){
+        if (actualQ[i] == comparisonQ[i]){
+            continue;
+        }
+        else if(position(alphabet,actualQ[i]) > position(alphabet,comparisonQ[i])){
+            // infront
+            return 1;
+        }
+        else{
+            // behind
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int inQuadgramsSearch(string quadgram){
+    int difference, first = 0, last = qlDatasetLen-1;
+    int middle = last/2;
+    while(first <= last){
+        difference = quadgramComparison(qStrings[middle], quadgram);
+        if(difference ==0){
+            return middle;
+        }
+        else if (difference == 1){
+            last = middle - 1;
+        }
+        else {
+            first = middle + 1;
+        }
+        middle = (first + last)/2;
+    }
+    return -1;
+}
+
+double quadgram_fitness(string text){
+    int i,j, index = 0;
+    double sum = 0.;
+    string currentQuadgram = "aaaa";
+    for(i=0;i<(text.length()-3);i++){
+        for(j=0;j<4;j++){
+            currentQuadgram[j] = text[i+j];
+        }
+        index = inQuadgramsSearch(currentQuadgram);
+        if(index != -1){
+            sum += qFrequencies[index];
+        }
+        else {
+            sum += -4.000000000000196;
+        }
+    }
+    
+    return sum;
 }
 
 string plugboardEncryptor(string text, string swaps){
@@ -115,10 +205,46 @@ string enigma(string text, string wheelOrder, string ringSetting, string initial
     return plugboardEncryptor(rotors(plugboardEncryptor(text, plugs), wheelOrder, ringSetting, initialSetting), plugs);
 }
 
+void rotorBruteForce(string ciphertext){
+    // wheel order
+    int holder;
+    // because it refuses to intialise the top line for some reason..
+    int i,j,k,counter = 0;
+    double fitness;
+    string strRotorKey = "111";
+
+
+    for(i=0;i<5;i++){
+        for (j=0;j<5;j++){
+            if (i != j){
+                for (k=0;k<5;k++){
+                    if (i != k && j != k){
+                        strRotorKey = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
+                        fitness = quadgram_fitness(enigma(ciphertext,strRotorKey, "gto", "sdv", ""));
+                        rotorKeys.emplace(make_pair(fitness, strRotorKey));
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 int main(){
+    readQuadgramsCSV();
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
     string testCiphertext = enigma(testPlaintext, "423", "gto", "sdv","adehgyimknlrozqvtxuw");
-    cout << testCiphertext;
+    // clock_t start = clock(), diff;
+    rotorBruteForce(testCiphertext);
+    // diff = clock() - start;
+    // int msec = diff * 1000 / CLOCKS_PER_SEC;
+    // printf("\nTime taken %d seconds %d milliseconds", msec/1000, msec%1000);
+    multimap<double, string>::iterator itr = rotorKeys.end();
+    while (itr != rotorKeys.begin()) {
+        cout << '\t' << itr->second << '\t' << itr->first << '\n';
+        --itr;
+    }
+    // cout << endl;
     return 1;
 }
 
