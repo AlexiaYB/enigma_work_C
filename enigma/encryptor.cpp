@@ -6,8 +6,6 @@
 #include <chrono>
 #include <map>
 #include <bits/stdc++.h>
-#include <list>
-#include <algorithm>
 using namespace std;
 using namespace std::chrono;
 const string alphabet = "abcdefghijklmnopqrstuvwxyz";
@@ -363,11 +361,23 @@ void rotorBruteForce(string ciphertext){
     for(i=0;i<5;i++){for (j=0;j<5;j++){if (i != j){for (k=0;k<5;k++){if (i != k && j != k){
                         strWheelKey = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
                         for(l=0;l<26;l++){for(m=0;m<26;m++){for (n=0;n<26;n++){
-                                    strInitalKey = to_string(l) + to_string(m) + to_string(n);
+                                    strInitalKey = string() + alphabet[l] + alphabet[m] + alphabet[n];
                                     fitness = quadgram_fitness(enigma(ciphertext,strWheelKey, "gto", strInitalKey, ""));
                                     rotorKeys.emplace(make_pair(fitness, strWheelKey + strInitalKey));
                                 }}}
                     }}}}}
+}
+
+void outputRotorsCSV(){
+    ofstream fout("output.csv");
+    multimap<double, string>::iterator itr = rotorKeys.end();
+    fout << "rotorKey" << ", "<<"evaluationStatistic"<< "\n";
+    while (itr != rotorKeys.begin()) {
+        --itr;
+        fout << itr->second << ", " << itr->first << "\n";
+    }
+    fout.close();
+
 }
 
 
@@ -376,6 +386,7 @@ int main(){
     readMonogramsCSV();
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
     string testCiphertext = enigma(testPlaintext, "423", "gto", "sdv","adehgyimknlrozqvtxuw");
+    
     // auto start = high_resolution_clock::now();
     // rotorBruteForce(testCiphertext);
     // auto stop = high_resolution_clock::now();
