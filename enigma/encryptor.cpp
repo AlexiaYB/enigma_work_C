@@ -3,13 +3,21 @@
 #include <fstream>
 #include <sstream>
 #include <iterator>
+#include <chrono>
 #include <map>
+#include <bits/stdc++.h>
+#include <list>
+#include <algorithm>
 using namespace std;
+using namespace std::chrono;
 const string alphabet = "abcdefghijklmnopqrstuvwxyz";
 const int qlDatasetLen = 40629;
 // file data
 string qStrings[qlDatasetLen];
 double qFrequencies[qlDatasetLen];
+string mStrings[26];
+double mFrequencies[26];
+
 
 // rotor constants
 // add/minus 1 please
@@ -34,6 +42,39 @@ int position(string referenceString, char currentCharacter){
     return -1;
 }
 
+int mod(int currentNum, int modulus = 26){
+    if (currentNum > 0){
+        return currentNum % modulus;
+    }
+    else{
+        return (currentNum % modulus + modulus) % modulus;
+    }
+}
+
+void readMonogramsCSV(){
+    ifstream qFile("monogram_frequency.csv"); 
+    string text;
+    int column= 0, row = 0;
+    while (getline(qFile, text, '\n')) {
+        if (column != 0){
+            stringstream ss(text); 
+            while (getline(ss, text, ',')){
+                if (row==0){
+                    mStrings[column -1 ] = text;
+                }
+                else{
+                    mFrequencies[column - 1] = stod(text);
+                }
+                row ++;
+            }
+        }
+        column ++;
+        row = 0;
+    }
+
+    qFile.close();
+    return;
+}
 
 void readQuadgramsCSV(){
     ifstream qFile("short_quadgram_log_frequency.csv"); 
@@ -117,6 +158,119 @@ double quadgram_fitness(string text){
     return sum;
 }
 
+void frequenciesCount (map<char, double> &frequenciesMap, string textList){
+    int i;
+    char currentChar;
+    for(i=0;i<textList.length();i++){
+        currentChar = textList[i];
+        if(frequenciesMap.find(currentChar) != frequenciesMap.end()){
+            frequenciesMap[currentChar] += 1;
+        }
+        else{
+            frequenciesMap[currentChar] = 1;
+        }
+    }
+}
+
+void frequenciesCountPercentages(map<char, double> &frequenciesPMap, string textList){
+    int textLen = textList.length();
+    frequenciesCount(frequenciesPMap,textList);
+    map<char, double>::iterator itr = frequenciesPMap.begin();
+    while (itr != frequenciesPMap.end()) {
+        frequenciesPMap[itr-> first] = (itr -> second / textLen) * 100;
+        itr++;
+    }
+}
+
+void fullAlphabetCounts(multimap<double, char> &alphabetMap, string textList){
+    int i,textLen = textList.length();
+    char currentChar;
+    map<char, double> tempMap;
+    frequenciesCount(tempMap,textList);
+    for(i=0;i<26;i++){
+        currentChar = alphabet[i];
+        if(tempMap.find(currentChar) != tempMap.end()){
+            alphabetMap.insert({(tempMap[currentChar] / textLen) * 100, currentChar});
+        }
+        else{
+            alphabetMap.insert({0, currentChar});
+        }
+    }
+}
+
+double IOC(string textList){
+    map<char, double> counts;
+    frequenciesCount(counts, textList); 
+    int i;
+    double sum =0;
+    map<char, double>::iterator itr = counts.begin();
+    while (itr != counts.end()) {
+        sum += (double)(itr -> second * (itr -> second-1)) / (textList.length() * (textList.length() -1));
+        itr++;
+    }
+    return sum;
+}
+
+double entropy(string text){
+    double current, total = 0;
+    map<char, double> Pcounts;
+    frequenciesCountPercentages(Pcounts, text);
+    map<char, double>::iterator itr = Pcounts.begin();
+    while (itr != Pcounts.end()) {
+        current = itr -> second / 100;
+        total += (double)(current) * (log(current)/log(2));
+        itr++;
+    }
+    return -total;
+}
+
+double twist(string text){
+    double total = 0;
+    int counter = 0;
+    multimap<double,char> alphabetCounts;
+    fullAlphabetCounts(alphabetCounts, text);
+    multimap<double, char>::iterator itr = alphabetCounts.begin();
+    while (itr != alphabetCounts.end()) {
+        if(counter<14){
+            total -= itr -> first ;
+        }
+        else{
+            total += itr -> first;
+        }
+        itr++;
+        counter++;
+    }
+    return abs(total);
+}
+
+double languageTwist(string text){
+    double total = 0;
+    int i, counter = 0;
+    multimap<double,char> alphabetCounts;
+    fullAlphabetCounts(alphabetCounts, text);
+    multimap<double, char>::iterator itr = alphabetCounts.begin();
+
+    multiset<double> sortedAlphabet;
+    for(i=0;i<26;i++){
+        sortedAlphabet.insert(mFrequencies[i]);
+    }
+    multiset<double>::iterator itr2 = sortedAlphabet.begin();
+
+    while (itr != alphabetCounts.end()) {
+        if(counter<14){
+            total += *itr2 - itr -> first;
+        }
+        else{
+            total +=  itr -> first - *itr2;
+        }
+        itr++;
+        itr2++;
+        counter++;
+        
+    }
+    return abs(total);
+}
+
 string plugboardEncryptor(string text, string swaps){
     int i, index, length = text.length();
     string newText = text;
@@ -141,15 +295,6 @@ int reflectorUKWB(int letterNum){
     string key = "yruhqsldpxngokmiebfzcwvjat";
     // well isn't that more efficient!!!!
     return (key[letterNum] - 'a');
-}
-
-int mod(int currentNum, int modulus = 26){
-    if (currentNum > 0){
-        return currentNum % modulus;
-    }
-    else{
-        return (currentNum % modulus + modulus) % modulus;
-    }
 }
 
 // rotor keys go slow --> fast (left to right)
@@ -209,43 +354,39 @@ void rotorBruteForce(string ciphertext){
     // wheel order
     int holder;
     // because it refuses to intialise the top line for some reason..
-    int i,j,k,counter = 0;
+    int i,j,k,l,m,n, counter = 0;
     double fitness;
-    string strRotorKey = "111";
+    string strWheelKey = "111";
+    string strInitalKey = "111";
 
-
-    for(i=0;i<5;i++){
-        for (j=0;j<5;j++){
-            if (i != j){
-                for (k=0;k<5;k++){
-                    if (i != k && j != k){
-                        strRotorKey = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
-                        fitness = quadgram_fitness(enigma(ciphertext,strRotorKey, "gto", "sdv", ""));
-                        rotorKeys.emplace(make_pair(fitness, strRotorKey));
-                    }
-                }
-            }
-        }
-    }
+    // wheel order
+    for(i=0;i<5;i++){for (j=0;j<5;j++){if (i != j){for (k=0;k<5;k++){if (i != k && j != k){
+                        strWheelKey = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
+                        for(l=0;l<26;l++){for(m=0;m<26;m++){for (n=0;n<26;n++){
+                                    strInitalKey = to_string(l) + to_string(m) + to_string(n);
+                                    fitness = quadgram_fitness(enigma(ciphertext,strWheelKey, "gto", strInitalKey, ""));
+                                    rotorKeys.emplace(make_pair(fitness, strWheelKey + strInitalKey));
+                                }}}
+                    }}}}}
 }
 
 
 int main(){
     readQuadgramsCSV();
+    readMonogramsCSV();
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
     string testCiphertext = enigma(testPlaintext, "423", "gto", "sdv","adehgyimknlrozqvtxuw");
-    // clock_t start = clock(), diff;
-    rotorBruteForce(testCiphertext);
-    // diff = clock() - start;
-    // int msec = diff * 1000 / CLOCKS_PER_SEC;
-    // printf("\nTime taken %d seconds %d milliseconds", msec/1000, msec%1000);
-    multimap<double, string>::iterator itr = rotorKeys.end();
-    while (itr != rotorKeys.begin()) {
-        cout << '\t' << itr->second << '\t' << itr->first << '\n';
-        --itr;
-    }
-    // cout << endl;
-    return 1;
+    // auto start = high_resolution_clock::now();
+    // rotorBruteForce(testCiphertext);
+    // auto stop = high_resolution_clock::now();
+    // auto duration = duration_cast<microseconds>(stop - start);
+    // multimap<double, string>::iterator itr = rotorKeys.end();
+    // while (itr != rotorKeys.begin()) {
+    //     --itr;
+    //     cout << '\t' << itr->second << '\t' << itr->first << '\n';
+    // }
+    // cout << duration.count();
+
 }
 
 
