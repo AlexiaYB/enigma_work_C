@@ -16,6 +16,13 @@ double qFrequencies[qlDatasetLen];
 string mStrings[26];
 double mFrequencies[26];
 
+// struct for keys
+struct enigmaKey { 
+  string wheelOrder;
+  string ringSetting;
+  string initalSetting;
+  string plugs;
+};
 
 // rotor constants
 // add/minus 1 please
@@ -26,7 +33,9 @@ const int wheels[5][26] = {{4, 9, 10, 2, 7, 1, 23, 9, 13, 16, 3, 8, 2, 9, 10, 18
                         {4, 17, 12, 18, 11, 20, 3, 19, 16, 7, 10, 23, 5, 20, 9, 22, 23, 14, 1, 13, 16, 8, 6, 15, 24, 2},
                         {21, 24, 25, 14, 2, 3, 13, 17, 12, 6, 8, 18, 1, 20, 23, 8, 10, 5, 20, 16, 22, 19, 9, 7, 4, 11}};
 const string wheelsAlphabet[] = {"ekmflgdqvzntowyhxuspaibrcj","ajdksiruxblhwtmcqgznpyfvoe", "bdfhjlcprtxvznyeiwgakmusqo", "esovpzjayquirhxlnftgkdcmwb", "vzbrgityupsdnhlxawmjqofeck"};
-multimap<double, string> rotorKeys;
+// rotor variables
+multimap<double, enigmaKey> rotorKeys;
+
 
 int position(string referenceString, char currentCharacter){
     // returns first position in string
@@ -269,20 +278,20 @@ double languageTwist(string text){
     return abs(total);
 }
 
-string plugboardEncryptor(string text, string swaps){
+string plugboardEncryptor(string text, enigmaKey &currentKey){
     int i, index, length = text.length();
     string newText = text;
     for(i = 0; i < length; i++){
-        index = position(swaps,text[i]);
+        index = position(currentKey.plugs,text[i]);
         if(index == -1){
             newText[i] = text[i];
         }
         else {
             if (index % 2 == 0){
-                newText[i] = swaps[index + 1];
+                newText[i] = currentKey.plugs[index + 1];
             }
             else {
-                newText[i] = swaps[index - 1];
+                newText[i] = currentKey.plugs[index - 1];
             }
         }
     }   
@@ -296,27 +305,27 @@ int reflectorUKWB(int letterNum){
 }
 
 // rotor keys go slow --> fast (left to right)
-string rotors(string text, string wheelOrder, string ringSetting, string initialSetting){
+string rotors(string text, enigmaKey &currentKey){
     int i,j;
     int currentCharacter;
-    int currentMessageSettings[] = {(int) (initialSetting[0] - 'a'),
-                                (int) (initialSetting[1] - 'a'),
-                                (int) (initialSetting[2] - 'a')};
-    const int numberRingSettings[] = {(int) (ringSetting[0] - 'a'),
-                                (int) (ringSetting[1] - 'a'),
-                                (int) (ringSetting[2] - 'a')};
+    int currentMessageSettings[] = {(int) (currentKey.initalSetting[0] - 'a'),
+                                (int) (currentKey.initalSetting[1] - 'a'),
+                                (int) (currentKey.initalSetting[2] - 'a')};
+    const int numberRingSettings[] = {(int) (currentKey.ringSetting[0] - 'a'),
+                                (int) (currentKey.ringSetting[1] - 'a'),
+                                (int) (currentKey.ringSetting[2] - 'a')};
     string finalText = text;
 
     for (i=0;i<text.length();i++){
         currentCharacter = text[i] - 'a';
         // slow
-        if (alphabet[currentMessageSettings[1]] == turnovers[(int)wheelOrder[1]-49]){
+        if (alphabet[currentMessageSettings[1]] == turnovers[(int)currentKey.wheelOrder[1]-49]){
             currentMessageSettings[0] = mod(currentMessageSettings[0] + 1);
             // double step
             currentMessageSettings[1] = mod(currentMessageSettings[1] + 1);
         }
         // middle
-        if (alphabet[currentMessageSettings[2]] == turnovers[(int)wheelOrder[2] - 49]){
+        if (alphabet[currentMessageSettings[2]] == turnovers[(int)currentKey.wheelOrder[2] - 49]){
             currentMessageSettings[1] = mod(currentMessageSettings[1] + 1);
         }
         // fast
@@ -325,7 +334,7 @@ string rotors(string text, string wheelOrder, string ringSetting, string initial
         // first rotor pass
         for(j=2;j>-1;j+=-1){
             currentCharacter = mod(currentCharacter + currentMessageSettings[j]);
-            currentCharacter = mod(currentCharacter + wheels[(int)wheelOrder[j] - 49][
+            currentCharacter = mod(currentCharacter + wheels[(int)currentKey.wheelOrder[j] - 49][
                 mod(currentCharacter - numberRingSettings[j])]);
                 // abs??? % not working 
             currentCharacter = mod(currentCharacter - currentMessageSettings[j]);
@@ -335,8 +344,8 @@ string rotors(string text, string wheelOrder, string ringSetting, string initial
         // second rotor pass
         for(j=0;j<3;j++){
             currentCharacter = mod(currentCharacter + currentMessageSettings[j]);
-            currentCharacter = mod(currentCharacter - wheels[(int)wheelOrder[j] - 49][
-                position(wheelsAlphabet[(int)wheelOrder[j] - 49], alphabet[mod(currentCharacter - numberRingSettings[j])])]);
+            currentCharacter = mod(currentCharacter - wheels[(int)currentKey.wheelOrder[j] - 49][
+                position(wheelsAlphabet[(int)currentKey.wheelOrder[j] - 49], alphabet[mod(currentCharacter - numberRingSettings[j])])]);
             currentCharacter = mod(currentCharacter - currentMessageSettings[j]);
         }
         finalText[i] = alphabet[currentCharacter];
@@ -344,8 +353,8 @@ string rotors(string text, string wheelOrder, string ringSetting, string initial
     return finalText;
 }
 
-string enigma(string text, string wheelOrder, string ringSetting, string initialSetting, string plugs){
-    return plugboardEncryptor(rotors(plugboardEncryptor(text, plugs), wheelOrder, ringSetting, initialSetting), plugs);
+string enigma(string text, enigmaKey &currentKey){
+    return plugboardEncryptor(rotors(plugboardEncryptor(text, currentKey), currentKey), currentKey);
 }
 
 void rotorBruteForce(string ciphertext){
@@ -354,27 +363,28 @@ void rotorBruteForce(string ciphertext){
     // because it refuses to intialise the top line for some reason..
     int i,j,k,l,m,n, counter = 0;
     double fitness;
-    string strWheelKey = "111";
-    string strInitalKey = "111";
+    enigmaKey currentKey;
 
     // wheel order
     for(i=0;i<5;i++){for (j=0;j<5;j++){if (i != j){for (k=0;k<5;k++){if (i != k && j != k){
-                        strWheelKey = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
+                        currentKey.wheelOrder = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
                         for(l=0;l<26;l++){for(m=0;m<26;m++){for (n=0;n<26;n++){
-                                    strInitalKey = string() + alphabet[l] + alphabet[m] + alphabet[n];
-                                    fitness = quadgram_fitness(enigma(ciphertext,strWheelKey, "gto", strInitalKey, ""));
-                                    rotorKeys.emplace(make_pair(fitness, strWheelKey + strInitalKey));
+                                    currentKey.initalSetting = string() + alphabet[l] + alphabet[m] + alphabet[n];
+                                    currentKey.ringSetting = "gto";
+                                    currentKey.plugs = "";
+                                    fitness = quadgram_fitness(enigma(ciphertext,currentKey));
+                                    rotorKeys.emplace(make_pair(fitness, currentKey));
                                 }}}
                     }}}}}
 }
 
 void outputRotorsCSV(){
     ofstream fout("output.csv");
-    multimap<double, string>::iterator itr = rotorKeys.end();
-    fout << "rotorKey" << ", "<<"evaluationStatistic"<< "\n";
+    multimap<double, enigmaKey>::iterator itr = rotorKeys.end();
+    fout << "wheelOrder" <<", "<< "initialSetting" << ", "<<"evaluationStatistic"<< "\n";
     while (itr != rotorKeys.begin()) {
         --itr;
-        fout << itr->second << ", " << itr->first << "\n";
+        fout << itr->second.wheelOrder<< ", " << itr -> second.initalSetting << ", " << itr->first << "\n";
     }
     fout.close();
 
@@ -385,18 +395,26 @@ int main(){
     readQuadgramsCSV();
     readMonogramsCSV();
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
-    string testCiphertext = enigma(testPlaintext, "423", "gto", "sdv","adehgyimknlrozqvtxuw");
+    enigmaKey testingKey;
+    testingKey.wheelOrder = "423";
+    testingKey.initalSetting ="sdv";
+    testingKey.ringSetting = "gto";
+    testingKey.plugs = "adehgyimknlrozqvtxuw";
+
+    string testCiphertext = enigma(testPlaintext, testingKey);
     
     // auto start = high_resolution_clock::now();
     // rotorBruteForce(testCiphertext);
     // auto stop = high_resolution_clock::now();
     // auto duration = duration_cast<microseconds>(stop - start);
-    // multimap<double, string>::iterator itr = rotorKeys.end();
+    // multimap<double, enigmaKey>::iterator itr = rotorKeys.end();
     // while (itr != rotorKeys.begin()) {
     //     --itr;
     //     cout << '\t' << itr->second << '\t' << itr->first << '\n';
     // }
     // cout << duration.count();
+     rotorKeys.emplace(make_pair(1187.95, testingKey));
+     outputRotorsCSV();
 
 }
 
