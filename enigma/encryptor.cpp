@@ -372,19 +372,20 @@ void rotorBruteForce(string ciphertext){
                                     currentKey.initalSetting = string() + alphabet[l] + alphabet[m] + alphabet[n];
                                     currentKey.ringSetting = "gto";
                                     currentKey.plugs = "";
-                                    fitness = quadgram_fitness(enigma(ciphertext,currentKey));
+                                    fitness = entropy(enigma(ciphertext,currentKey));
                                     rotorKeys.emplace(make_pair(fitness, currentKey));
                                 }}}
+                        cout << "wheel order "<< currentKey.wheelOrder << " complete" << "\n";
                     }}}}}
 }
 
 void outputRotorsCSV(){
     ofstream fout("output.csv");
-    multimap<double, enigmaKey>::iterator itr = rotorKeys.end();
+    multimap<double, enigmaKey>::iterator itr = rotorKeys.begin();
     fout << "wheelOrder" <<", "<< "initialSetting" << ", "<<"evaluationStatistic"<< "\n";
-    while (itr != rotorKeys.begin()) {
-        --itr;
+    while (itr != rotorKeys.end()) {
         fout << itr->second.wheelOrder<< ", " << itr -> second.initalSetting << ", " << itr->first << "\n";
+        itr++;
     }
     fout.close();
 
@@ -413,8 +414,14 @@ int main(){
     //     cout << '\t' << itr->second << '\t' << itr->first << '\n';
     // }
     // cout << duration.count();
-     rotorKeys.emplace(make_pair(1187.95, testingKey));
-     outputRotorsCSV();
+
+    auto start = high_resolution_clock::now();
+    rotorBruteForce(testCiphertext);
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << duration.count();
+
+    outputRotorsCSV();
 
 }
 

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <set>
 using namespace std;
 
 // constants
@@ -12,8 +13,8 @@ string qStrings[qlDatasetLen];
 double qFrequencies[qlDatasetLen];
 // decryption counts
 int decryptions[] = {19, 24, 26, 23, 18, 17, 21, 16, 27, 20, 22, 31, 14, 25, 28, 32, 34, 13, 30, 12, 15, 29, 10, 11, 33, 35, 38, 36, 39, 8, 40, 45, 41, 37, 9, 43, 5, 42, 7, 44, 48, 54, 4};
-double dProbability[] = {0.05582922824302135, 0.054187192118226604, 0.052545155993431854, 0.052545155993431854, 0.04926108374384237, 0.04597701149425287, 0.04433497536945813, 0.04433497536945813, 0.042692939244663386, 0.042692939244663386, 0.041050903119868636, 0.041050903119868636, 0.03776683087027915, 0.034482758620689655, 0.034482758620689655, 0.031198686371100168, 0.027914614121510674, 0.027914614121510674, 0.026272577996715927, 0.022988505747126436, 0.021346469622331693, 0.0180623973727422, 0.016420361247947456, 0.014778325123152709, 0.014778325123152709, 0.013136288998357963, 0.011494252873563218, 0.009852216748768473, 0.008210180623973728, 0.008210180623973728, 0.008210180623973728, 0.006568144499178982, 0.006568144499178982, 0.0049261083743842365, 0.0049261083743842365, 0.0049261083743842365, 0.0049261083743842365, 0.003284072249589491, 0.003284072249589491, 0.0016420361247947454, 0.0016420361247947454, 0.0016420361247947454, 0.0016420361247947454};
-int decryptionsCounted;
+// double dProbability[] = {0.05582922824302135, 0.054187192118226604, 0.052545155993431854, 0.052545155993431854, 0.04926108374384237, 0.04597701149425287, 0.04433497536945813, 0.04433497536945813, 0.042692939244663386, 0.042692939244663386, 0.041050903119868636, 0.041050903119868636, 0.03776683087027915, 0.034482758620689655, 0.034482758620689655, 0.031198686371100168, 0.027914614121510674, 0.027914614121510674, 0.026272577996715927, 0.022988505747126436, 0.021346469622331693, 0.0180623973727422, 0.016420361247947456, 0.014778325123152709, 0.014778325123152709, 0.013136288998357963, 0.011494252873563218, 0.009852216748768473, 0.008210180623973728, 0.008210180623973728, 0.008210180623973728, 0.006568144499178982, 0.006568144499178982, 0.0049261083743842365, 0.0049261083743842365, 0.0049261083743842365, 0.0049261083743842365, 0.003284072249589491, 0.003284072249589491, 0.0016420361247947454, 0.0016420361247947454, 0.0016420361247947454, 0.0016420361247947454};
+// int decryptionsCounted;
 
 void readQuadgramsCSV(){
     ifstream qFile("short_quadgram_log_frequency.csv"); 
@@ -228,7 +229,7 @@ string plugboardHC(string bestSwaps,string ciphertext){
             }
         }
     }
-    decryptionsCounted = timeCount;
+    // decryptionsCounted = timeCount;
     return bestSwaps;
 }
 
@@ -252,17 +253,17 @@ int plugboardComparison(string actualSwaps, string HCswaps){
     return 1;
 }
 
-double determineDProbability(int measuredDecryptions){
-    int pos;
-    pos = position(decryptions, measuredDecryptions/100);
-    if (pos != -1){
-        return dProbability[pos];
-    }
-    else{
-        return 0;
-    }
+// double determineDProbability(int measuredDecryptions){
+//     int pos;
+//     pos = position(decryptions, measuredDecryptions/100);
+//     if (pos != -1){
+//         return dProbability[pos];
+//     }
+//     else{
+//         return 0;
+//     }
 
-}
+// }
 
 
 int main() {
@@ -270,15 +271,16 @@ int main() {
     srand((unsigned) time(NULL));
     string plaintext = "dearmrrogersyouwillneverknowhowrelievediamtohearthatthelibrarywillremainintactandhereatthemanoriknowthatyouwerekeentosupportourcityinitsambitiontorivalnewyorkwithitsastorandlennoxlibrariesbuttogetherwehavespentconsiderableeffortbuildingauniquecollectionofrareandimportantworksandiwouldhavebeendeeplysaddenedtoloseitiwastouchedbyyouroffertomakeitaconditionofthedonationthatishouldcontinuetobeemployedasthecuratorbutthemanorismyhomeaswellasmyworkplaceanditfeelsrightthatthisimportantcollectionofrarebooksshouldremainhereinprivatehandswhereicancareforitproperlyiamsorrytohearthatyouwillbewithdrawingfromtheraceforgovernorasiknowthatwasacherishedambitioniamsureyouwouldhavefilledtherolewithdistinctionbuttherewillbeotherwaystoserveandithinkyouarerightthatthestrangedeathofstanleyisleswouldhaveunderminedyourcampaignweknowwhatgossipcandointhesmallworldofrhodeislandsocietyandyouropponentswouldhavetakengreatpleasureinspeculatingontheunexplaineddeathinyourhomeasyourequestedihavecompletedmyauditofthelibrarycontentsandicanassureyouthatnothingismissingandnobookshavebeenharmediwillofcoursecontinuetoprotectthemandihopeyouwillagreethatitisworthcontinuingtoinvestinthecollectiontogetherwecanbuilditintooneofthefinestarchivesofamericanliteratureontheeastcoastiunderstandthatyourniecenancywillbevisitingnextweekandilookforwardtoseeingheragainwhileshedoesnotshareourloveoffinebooksshecertainlylovesthishouseandiamsureshewillhaveherownideasabouthowtofreshenitupiremainaloyalservanttoyouandtothelibrarymaisie";
     string bestKey = "abcdefghijklmnopqrst";
-    for (i=0;i<100;i++){
-        bestKey = plugboardHC("abcdefghijklmnopqrst", plugboardEncryptor(plaintext, "adehgyimknlrozqvtxuw"));
-        if (plugboardComparison("adehgyimknlrozqvtxuw", bestKey) == 1){
-            cout << "correct "<< decryptionsCounted<< " "<< determineDProbability(decryptionsCounted) << ", ";
-        }
-        else{
-            cout << "incorrect "<< decryptionsCounted<< " "<< determineDProbability(decryptionsCounted) << ", ";
-        }
-    }
+    // for (i=0;i<100;i++){
+    //     bestKey = plugboardHC("abcdefghijklmnopqrst", plugboardEncryptor(plaintext, "adehgyimknlrozqvtxuw"));
+    //     if (plugboardComparison("adehgyimknlrozqvtxuw", bestKey) == 1){
+    //         cout << "correct "<< decryptionsCounted<< " "<< determineDProbability(decryptionsCounted) << ", ";
+    //     }
+    //     else{
+    //         cout << "incorrect "<< decryptionsCounted<< " "<< determineDProbability(decryptionsCounted) << ", ";
+    //     }
+    // }
+
 
     return 0;
 }
