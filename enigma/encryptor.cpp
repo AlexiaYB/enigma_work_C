@@ -359,8 +359,6 @@ string enigma(string text, enigmaKey &currentKey){
 
 void rotorBruteForce(string ciphertext){
     // wheel order
-    int holder;
-    // because it refuses to intialise the top line for some reason..
     int i,j,k,l,m,n, counter = 0;
     double fitness;
     enigmaKey currentKey;
@@ -372,7 +370,7 @@ void rotorBruteForce(string ciphertext){
                                     currentKey.initalSetting = string() + alphabet[l] + alphabet[m] + alphabet[n];
                                     currentKey.ringSetting = "gto";
                                     currentKey.plugs = "";
-                                    fitness = entropy(enigma(ciphertext,currentKey));
+                                    fitness = entropy(rotors(ciphertext,currentKey));
                                     rotorKeys.emplace(make_pair(fitness, currentKey));
                                 }}}
                         cout << "wheel order "<< currentKey.wheelOrder << " complete" << "\n";
@@ -393,8 +391,8 @@ void outputRotorsCSV(){
 
 
 int main(){
-    readQuadgramsCSV();
-    readMonogramsCSV();
+    // readQuadgramsCSV();
+    // readMonogramsCSV();
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristic";
     enigmaKey testingKey;
     testingKey.wheelOrder = "423";
@@ -416,12 +414,14 @@ int main(){
     // cout << duration.count();
 
     auto start = high_resolution_clock::now();
-    rotorBruteForce(testCiphertext);
+    entropy(rotors(testPlaintext,testingKey));
+
+    // rotorBruteForce(testCiphertext);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << duration.count();
 
-    outputRotorsCSV();
+    // outputRotorsCSV();
 
 }
 
