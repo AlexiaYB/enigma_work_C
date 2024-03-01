@@ -10,28 +10,46 @@ using namespace std::chrono;
 
 const int qlDatasetLen = 40629;
 const string alphabet = "abcdefghijklmnopqrstuvwxyz";
-string qStrings[qlDatasetLen];
-double qFrequencies[qlDatasetLen];
-ifstream qFile("quadgram_log_values.csv"); 
-const int qLineLength = 20;
+map<string,double> quadgrams;
 
-double quadgramLogResult(int quadgramValue){
-    string data;
-    char currentCharacter;
-    qFile.seekg(qLineLength * quadgramValue, ios::beg);
-    getline(qFile, data);
-    return stod(data);
+void readQuadgramsCSV(){
+    ifstream qFile("short_quadgram_log_frequency.csv"); 
+    string text, qString;
+    int column= 0, row = 0;
+    while (getline(qFile, text, '\n')) {
+        if (column != 0){
+            stringstream ss(text); 
+            while (getline(ss, text, ',')){
+                if (row==0){
+                    qString = text;
+                }
+                else{
+                    quadgrams.emplace(make_pair(qString, stod(text)));
+                }
+                row ++;
+            }
+        }
+        column ++;
+        row = 0;
+    }
+    return;
 }
 
 double quadgramFitness(string text){
-    int i,j, qSum = 0;
-    double sum = 0.;
+    int i,j;
+    double sum = 0., value = 0.;
+    string currentQuadgram = "aaaa";
     for(i=0;i<(text.length()-3);i++){
         for(j=0;j<4;j++){
-            qSum += (text[i+j] - 'a') * (pow(26,(3-j)));
+            currentQuadgram[j] = text[i+j];
         }
-        sum += quadgramLogResult(qSum);
-        qSum = 0;
+        value = quadgrams[currentQuadgram];
+        if(value != 0){
+            sum += value;
+        }
+        else {
+            sum += -4.000000000000196;
+        }
     }
     
     return sum;
@@ -140,10 +158,52 @@ string plugboardHC(string bestSwaps,string ciphertext){
     return bestSwaps;
 }
 
+void frequenciesCount (map<char, double> &frequenciesMap, string textList){
+    int i;
+    char currentChar;
+    for(i=0;i<textList.length();i++){
+        currentChar = textList[i];
+        if(frequenciesMap.find(currentChar) != frequenciesMap.end()){
+            frequenciesMap[currentChar] += 1;
+        }
+        else{
+            frequenciesMap[currentChar] = 1;
+        }
+    }
+}
 
+void frequenciesCountPercentages(map<char, double> &frequenciesPMap, string textList){
+    int textLen = textList.length();
+    frequenciesCount(frequenciesPMap,textList);
+    map<char, double>::iterator itr = frequenciesPMap.begin();
+    while (itr != frequenciesPMap.end()) {
+        frequenciesPMap[itr-> first] = (itr -> second / textLen) * 100;
+        itr++;
+    }
+}
+
+double equivalenceRelationship(string actualSwaps, string bestSwaps, string actualText){
+    int i;
+    double errorSum = 0.;
+    if (actualSwaps == bestSwaps){
+        return 0.;
+
+    }else{
+        map<char, double> percentageFrequencies;
+        frequenciesCountPercentages(percentageFrequencies,actualText);
+        for(i=0;i<26;i++){
+            if(actualSwaps[i] != bestSwaps[i]){
+                errorSum += percentageFrequencies[bestSwaps[i]];
+            }
+        }
+        return errorSum;
+    }
+}
 
 int main() {
     srand((unsigned) time(NULL));
+    ifstream qFile("short_quadgram_log_frequency.csv"); 
+    readQuadgramsCSV();
     int i;
     string plaintext = "dearmrrogersyouwillneverknowhowrelievediamtohearthatthelibrarywillremainintactandhereatthemanoriknowthatyouwerekeentosupportourcityinitsambitiontorivalnewyorkwithitsastorandlennoxlibrariesbuttogetherwehavespentconsiderableeffortbuildingauniquecollectionofrareandimportantworksandiwouldhavebeendeeplysaddenedtoloseitiwastouchedbyyouroffertomakeitaconditionofthedonationthatishouldcontinuetobeemployedasthecuratorbutthemanorismyhomeaswellasmyworkplaceanditfeelsrightthatthisimportantcollectionofrarebooksshouldremainhereinprivatehandswhereicancareforitproperlyiamsorrytohearthatyouwillbewithdrawingfromtheraceforgovernorasiknowthatwasacherishedambitioniamsureyouwouldhavefilledtherolewithdistinctionbuttherewillbeotherwaystoserveandithinkyouarerightthatthestrangedeathofstanleyisleswouldhaveunderminedyourcampaignweknowwhatgossipcandointhesmallworldofrhodeislandsocietyandyouropponentswouldhavetakengreatpleasureinspeculatingontheunexplaineddeathinyourhomeasyourequestedihavecompletedmyauditofthelibrarycontentsandicanassureyouthatnothingismissingandnobookshavebeenharmediwillofcoursecontinuetoprotectthemandihopeyouwillagreethatitisworthcontinuingtoinvestinthecollectiontogetherwecanbuilditintooneofthefinestarchivesofamericanliteratureontheeastcoastiunderstandthatyourniecenancywillbevisitingnextweekandilookforwardtoseeingheragainwhileshedoesnotshareourloveoffinebooksshecertainlylovesthishouseandiamsureshewillhaveherownideasabouthowtofreshenitupiremainaloyalservanttoyouandtothelibrarymaisie";
     string bestKey = "aosduvpqiwrlmnbghkcxefjtzy";
@@ -151,7 +211,8 @@ int main() {
 
 
     auto start = high_resolution_clock::now();
-    quadgramFitness(plaintext);
+    cout << equivalenceRelationship(bestKey, plugboardHC(bestKey,ciphertext), plaintext)<< "\n";
+
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << duration.count();
