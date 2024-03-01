@@ -208,14 +208,32 @@ int main() {
     string plaintext = "dearmrrogersyouwillneverknowhowrelievediamtohearthatthelibrarywillremainintactandhereatthemanoriknowthatyouwerekeentosupportourcityinitsambitiontorivalnewyorkwithitsastorandlennoxlibrariesbuttogetherwehavespentconsiderableeffortbuildingauniquecollectionofrareandimportantworksandiwouldhavebeendeeplysaddenedtoloseitiwastouchedbyyouroffertomakeitaconditionofthedonationthatishouldcontinuetobeemployedasthecuratorbutthemanorismyhomeaswellasmyworkplaceanditfeelsrightthatthisimportantcollectionofrarebooksshouldremainhereinprivatehandswhereicancareforitproperlyiamsorrytohearthatyouwillbewithdrawingfromtheraceforgovernorasiknowthatwasacherishedambitioniamsureyouwouldhavefilledtherolewithdistinctionbuttherewillbeotherwaystoserveandithinkyouarerightthatthestrangedeathofstanleyisleswouldhaveunderminedyourcampaignweknowwhatgossipcandointhesmallworldofrhodeislandsocietyandyouropponentswouldhavetakengreatpleasureinspeculatingontheunexplaineddeathinyourhomeasyourequestedihavecompletedmyauditofthelibrarycontentsandicanassureyouthatnothingismissingandnobookshavebeenharmediwillofcoursecontinuetoprotectthemandihopeyouwillagreethatitisworthcontinuingtoinvestinthecollectiontogetherwecanbuilditintooneofthefinestarchivesofamericanliteratureontheeastcoastiunderstandthatyourniecenancywillbevisitingnextweekandilookforwardtoseeingheragainwhileshedoesnotshareourloveoffinebooksshecertainlylovesthishouseandiamsureshewillhaveherownideasabouthowtofreshenitupiremainaloyalservanttoyouandtothelibrarymaisie";
     string bestKey = "aosduvpqiwrlmnbghkcxefjtzy";
     string ciphertext = plugboardEncryptor(plaintext,bestKey);
+    map<double,int> ERcounts;
+    double result;
+    for(i=0;i<1000;i++){
+        result = equivalenceRelationship(bestKey, plugboardHC(bestKey,ciphertext), plaintext);
+        if (ERcounts[result] == 0){
+            ERcounts[result] =1;
+        }
+        else{
+            ERcounts[result] += 1;
+        }
+        if(i %100 == 0){
+        cout << i<< " done" << "\n";
+        }
+    }
 
 
-    auto start = high_resolution_clock::now();
-    cout << equivalenceRelationship(bestKey, plugboardHC(bestKey,ciphertext), plaintext)<< "\n";
+    map<double,int>::iterator itr;
+        for (itr = ERcounts.begin(); itr != ERcounts.end(); itr++) {
+        cout << itr->first << "," << itr ->second << "\n";
+    }
+    // auto start = high_resolution_clock::now();
+    // cout << equivalenceRelationship(bestKey, plugboardHC(bestKey,ciphertext), plaintext)<< "\n";
 
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<microseconds>(stop - start);
-    cout << duration.count();
+    // auto stop = high_resolution_clock::now();
+    // auto duration = duration_cast<microseconds>(stop - start);
+    // cout << duration.count();
 
     qFile.close();
     return 1;
