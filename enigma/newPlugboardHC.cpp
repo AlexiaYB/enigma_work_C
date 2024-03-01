@@ -3,7 +3,9 @@
 #include <fstream>
 #include <sstream>
 #include <set>
+#include <chrono>
 using namespace std;
+using namespace std::chrono;
 
 // constants
 const int qlDatasetLen = 40629;
@@ -271,6 +273,16 @@ int main() {
     srand((unsigned) time(NULL));
     string plaintext = "dearmrrogersyouwillneverknowhowrelievediamtohearthatthelibrarywillremainintactandhereatthemanoriknowthatyouwerekeentosupportourcityinitsambitiontorivalnewyorkwithitsastorandlennoxlibrariesbuttogetherwehavespentconsiderableeffortbuildingauniquecollectionofrareandimportantworksandiwouldhavebeendeeplysaddenedtoloseitiwastouchedbyyouroffertomakeitaconditionofthedonationthatishouldcontinuetobeemployedasthecuratorbutthemanorismyhomeaswellasmyworkplaceanditfeelsrightthatthisimportantcollectionofrarebooksshouldremainhereinprivatehandswhereicancareforitproperlyiamsorrytohearthatyouwillbewithdrawingfromtheraceforgovernorasiknowthatwasacherishedambitioniamsureyouwouldhavefilledtherolewithdistinctionbuttherewillbeotherwaystoserveandithinkyouarerightthatthestrangedeathofstanleyisleswouldhaveunderminedyourcampaignweknowwhatgossipcandointhesmallworldofrhodeislandsocietyandyouropponentswouldhavetakengreatpleasureinspeculatingontheunexplaineddeathinyourhomeasyourequestedihavecompletedmyauditofthelibrarycontentsandicanassureyouthatnothingismissingandnobookshavebeenharmediwillofcoursecontinuetoprotectthemandihopeyouwillagreethatitisworthcontinuingtoinvestinthecollectiontogetherwecanbuilditintooneofthefinestarchivesofamericanliteratureontheeastcoastiunderstandthatyourniecenancywillbevisitingnextweekandilookforwardtoseeingheragainwhileshedoesnotshareourloveoffinebooksshecertainlylovesthishouseandiamsureshewillhaveherownideasabouthowtofreshenitupiremainaloyalservanttoyouandtothelibrarymaisie";
     string bestKey = "abcdefghijklmnopqrst";
+
+    auto start = high_resolution_clock::now();
+    // cout << plugboardHC(bestKey,plugboardEncryptor(plaintext,"uyabczvdxefjwglkhomn"))<< "\n";
+    // string neighbours[210];
+    // neighbours_plugboard(bestKey,neighbours);
+    
+    quadgram_fitness(plaintext);
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << duration.count();
     // for (i=0;i<100;i++){
     //     bestKey = plugboardHC("abcdefghijklmnopqrst", plugboardEncryptor(plaintext, "adehgyimknlrozqvtxuw"));
     //     if (plugboardComparison("adehgyimknlrozqvtxuw", bestKey) == 1){
