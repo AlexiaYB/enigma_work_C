@@ -455,16 +455,16 @@ int main(){
     testingKey.plugs = "dosaevpqiwrlmnbghkcxufjtzy";
 
     string testCiphertext = enigma(testPlaintext, testingKey);
-    testingKey.initalSetting = "aeh";
-    cout << enigma(testCiphertext,testingKey) << "\n";
+    // testingKey.initalSetting = "aeh";
+    // cout << enigma(testCiphertext,testingKey) << "\n";
 
-    testingKey.initalSetting = "bfh";
-    cout << enigma(testCiphertext,testingKey)<< "\n";
+    // testingKey.initalSetting = "bfh";
+    // cout << enigma(testCiphertext,testingKey)<< "\n";
 
     // testingKey.initalSetting = "cgh";
     // cout << enigma(testCiphertext,testingKey)<< "\n";
 
-    // testingKey.initalSetting = "dhh";
+    // testingKey.initalSetting = "hdh";
     // cout << enigma(testCiphertext,testingKey)<< "\n";
 
     // testingKey.initalSetting = "agh";
@@ -474,7 +474,7 @@ int main(){
     // cout << enigma(testCiphertext,testingKey)<< "\n";
 
 
-    // overalAlgorithm(testCiphertext);
+    overalAlgorithm(testCiphertext);
 
 
 
