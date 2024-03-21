@@ -97,7 +97,7 @@ void neighbours_plugboard(string swaps, set<string>& neighbours){
     string newSwaps;
     for(i=0;i<25;i++){
         for(j=1;j<(25-i);j++){
-            if((alphabet[i+j] != swaps[i]) && ((alphabet[i+j] != swaps[i+j]) or (alphabet[i] != swaps[i]))){
+            if((alphabet[i+j] != swaps[i]) && ((alphabet[i+j] != swaps[i+j]) || (alphabet[i] != swaps[i]))){
                 // either in pair or duplicate doubled  case
                 newSwaps = swaps;
                 if(swaps[i] == alphabet[i]){

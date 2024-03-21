@@ -5,7 +5,9 @@
 #include <iterator>
 #include <chrono>
 #include <map>
-#include <bits/stdc++.h>
+#include <set>
+#include <bit>
+#include <cmath> 
 using namespace std;
 using namespace std::chrono;
 const string alphabet = "abcdefghijklmnopqrstuvwxyz";
