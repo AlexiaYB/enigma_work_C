@@ -1,69 +1,40 @@
 # include <iostream>
+#include <set>
 using namespace std;
 const string alphabet = "abcdefghijklmnopqrstuvwxyz";
-
-string generatePKeyTest(){
-    int i, j, k;
-    string previousPlugboardList[] = {alphabet,alphabet};
-    // all E swaps
-    for(i=0;i<26;i++){
-        string newPlugboard = alphabet;
-        // change swap
-        newPlugboard[4] = alphabet[i];
-        newPlugboard[i] = 'e';
-        previousPlugboardList[0] = newPlugboard;
-        // all A swaps
-        for (j=0;j<26;j++){
-            if(j!= 4 && j != i){
-                newPlugboard = previousPlugboardList[0];
-                if (i != 0){
-                    newPlugboard[0] = alphabet[j];
-                    newPlugboard[j] = 'a';
-                    
-                }
-                previousPlugboardList[1] = newPlugboard;
-                // all T swaps
-                for (k=0;k<26;k++){
-                    if (k != 4 && k != 0 && k != i && k!= j){
-                        newPlugboard = previousPlugboardList[1];
-                    // change swap
-                        if (i != 19 && j != 19){
-                            newPlugboard[19] = alphabet[k];
-                            newPlugboard[k] = 't';
-                        }
-                        // if (newPlugboard == "ebcdafghijklmnopqrstuvwxyz"){
-                        //     return newPlugboard;
-                        // }
-                        cout << newPlugboard;
-                        cout << "\n";
-                    }
-                }
-            }
-
-        }
-    }
-    return "failed";
-}
-
+set<string> resultKeys;
+int counter = 0;
 
 const int depthLetters[] = {4,0, 19};
 void recursivePKeyTest(int depth, string baseKey){
     if (depth == 3){
-        cout << baseKey;
-        cout << "\n";
+        // cout << baseKey;
+        // cout << "\n";
+        resultKeys.insert(baseKey);
+        counter ++;
     }
     else if(alphabet[depthLetters[depth]] != baseKey[depthLetters[depth]]){
         recursivePKeyTest(depth+1, baseKey);
     }
     else{
-        int i;
+        int i, j;
         string newKey;
+        int selfSteckered = 0;
         for (i=0;i<26;i++){
+            selfSteckered = 0;
             if (alphabet[i] == baseKey[i]){
-                newKey = baseKey;
-                newKey[depthLetters[depth]] = alphabet[i];
-                newKey[i] = alphabet[depthLetters[depth]];
-                recursivePKeyTest(depth+1, newKey);
+                for(j=0;j<depth;j++){
+                    if (i == depthLetters[j]){
+                        selfSteckered = 1;
+                        break;
+                    }
+                }
+                if (selfSteckered == 0){
+                    newKey = baseKey;
+                    newKey[depthLetters[depth]] = alphabet[i];
+                    newKey[i] = alphabet[depthLetters[depth]];
+                    recursivePKeyTest(depth+1, newKey);
+                }
             }
         }
     }
@@ -73,6 +44,8 @@ void recursivePKeyTest(int depth, string baseKey){
 
 int main () {
     recursivePKeyTest(0,alphabet);
+    cout << resultKeys.size() << "\n";
+    cout << counter;
     return 1;
 }
 
