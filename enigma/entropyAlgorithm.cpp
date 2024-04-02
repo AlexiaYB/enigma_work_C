@@ -314,7 +314,7 @@ void rotorBruteForce(string ciphertext){
                         currentKey.wheelOrder = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
                         for(l=0;l<13;l++){for(m=0;m<13;m++){for (n=0;n<13;n++){
                                     currentKey.initalSetting = string() + alphabet[l] + alphabet[m] + alphabet[n];
-                                    currentKey.ringSetting = "efd";
+                                    currentKey.ringSetting = "gto";
                                     currentKey.plugs = "";
                                     fitness = entropy(rotors(ciphertext,currentKey));
                                     fullRotorKeys.emplace(make_pair(fitness, currentKey));
@@ -330,16 +330,23 @@ const int M = 100;
 const int X = 20;
 
 bool successCriterion(multimap<double, enigmaKey>& shortlistedKeys){
-    double TopDifference, otherMaxDifference, currentDifference;
+    double TopDifference = 0, otherMaxDifference, currentDifference, previous;
     multimap<double, enigmaKey>::iterator itr;
     itr = shortlistedKeys.begin();
-    TopDifference = itr -> first - (itr ++) -> first;
-
+    previous = itr -> first;
+    itr ++;
     while(itr != shortlistedKeys.end()) {
-        currentDifference = itr -> first - (itr ++) -> first;
-        if(currentDifference > otherMaxDifference){
-            otherMaxDifference = currentDifference;
+        if (TopDifference == 0){
+            TopDifference = itr -> first - previous;
         }
+        else {
+            currentDifference = itr -> first - previous;
+            if(currentDifference > otherMaxDifference){
+                otherMaxDifference = currentDifference;
+            }
+        }
+        previous = itr -> first;
+        itr ++;
     }
     if(TopDifference > (otherMaxDifference * X)){
         return true;
@@ -362,67 +369,71 @@ void overalAlgorithm(string ciphertext){
 
     // all E swaps
     for(i=0;i<26;i++){
-        if(i!= 0 && i != 19){
-            NKeys.clear();
-            newPlugboard = "abcdefghijklmnopqrstuvwxyz";
-            // change swap
-            newPlugboard[4] = alphabet[i];
-            newPlugboard[i] = 'e';
-            // take top N and try new plugboard
-            itr = fullRotorKeys.begin();
-            for (mapInterator=0;mapInterator<N;mapInterator++) {
-                currentKey = itr ->second;
-                currentKey.plugs = newPlugboard;
-                NKeys.emplace(make_pair(entropy(enigma(ciphertext,currentKey)), currentKey));
-                itr++;
-            }
-            // all A swaps
-            for (j=0;j<26;j++){
-                if(j!= 19 && i != j){
-                        MKeys.clear();
-                        newPlugboard = NKeys.begin() -> second.plugs;
+        NKeys.clear();
+        newPlugboard = "abcdefghijklmnopqrstuvwxyz";
+        // change swap
+        newPlugboard[4] = alphabet[i];
+        newPlugboard[i] = 'e';
+        // take top N and try new plugboard
+        itr = fullRotorKeys.begin();
+        for (mapInterator=0;mapInterator<N;mapInterator++) {
+            currentKey = itr ->second;
+            currentKey.plugs = newPlugboard;
+            NKeys.emplace(make_pair(entropy(enigma(ciphertext,currentKey)), currentKey));
+            itr++;
+        }
+        // all A swaps
+        for (j=0;j<26;j++){
+            if(j!= 4 && j != i){
+                    MKeys.clear();
+                    newPlugboard = NKeys.begin() -> second.plugs;
+                    // change swap
+                    if (i != 0){
+                    newPlugboard[0] = alphabet[j];
+                    newPlugboard[j] = 'a';
+                    }
+                    // take top M and try new plugboard
+                    itr = NKeys.begin();
+                    for (mapInterator=0;mapInterator<M;mapInterator++) {
+                        currentKey = itr ->second;
+                        currentKey.plugs = newPlugboard;
+                        MKeys.emplace(make_pair(entropy(enigma(ciphertext,currentKey)), currentKey));
+                        itr++;
+                    }
+                // all T swaps
+                for (k=0;k<26;k++){
+                    if (k != 4 && k != 0 && k != i && k!= j){
+                        XKeys.clear();
+                        newPlugboard = MKeys.begin() -> second.plugs;
                         // change swap
-                        newPlugboard[0] = alphabet[j];
-                        newPlugboard[j] = 'a';
-                        // take top M and try new plugboard
-                        itr = NKeys.begin();
-                        for (mapInterator=0;mapInterator<M;mapInterator++) {
+                        newPlugboard[19] = alphabet[k];
+                        newPlugboard[k] = 't';
+                        // take top X and try new plugboard
+                        itr = MKeys.begin();
+                        for (mapInterator=0;mapInterator<X;mapInterator++) {
                             currentKey = itr ->second;
                             currentKey.plugs = newPlugboard;
-                            MKeys.emplace(make_pair(entropy(enigma(ciphertext,currentKey)), currentKey));
+                            XKeys.emplace(make_pair(entropy(enigma(ciphertext,currentKey)), currentKey));
                             itr++;
                         }
-                    // all T swaps
-                    for (k=0;k<26;k++){
-                        if (i != k && j != k){
-                            XKeys.clear();
-                            newPlugboard = MKeys.begin() -> second.plugs;
-                            // change swap
-                            newPlugboard[19] = alphabet[k];
-                            newPlugboard[k] = 't';
-                            // take top X and try new plugboard
-                            itr = MKeys.begin();
-                            for (mapInterator=0;mapInterator<X;mapInterator++) {
-                                currentKey = itr ->second;
-                                currentKey.plugs = newPlugboard;
-                                XKeys.emplace(make_pair(entropy(enigma(ciphertext,currentKey)), currentKey));
-                                itr++;
-                            }
-                            // success criterion
-                            if (successCriterion(XKeys) == true){
-                                currentKey = XKeys.begin() -> second;
-                                cout << "wheel order:" << currentKey.wheelOrder << "\n";
-                                cout << "inital setting:" << currentKey.initalSetting << "\n";
-                                cout << "ring setting:" << currentKey.ringSetting << "\n";
-                                cout << "starter plugboard:" << currentKey.plugs << "\n";
-                                return;
-                            }
-
+                        if (newPlugboard == "ebcdafghijklmnopqrstuvwxyz"){
+                            int x = 3;
                         }
+
+                        // success criterion
+                        if (successCriterion(XKeys) == true){
+                            currentKey = XKeys.begin() -> second;
+                            cout << "wheel order:" << currentKey.wheelOrder << "\n";
+                            cout << "inital setting:" << currentKey.initalSetting << "\n";
+                            cout << "ring setting:" << currentKey.ringSetting << "\n";
+                            cout << "starter plugboard:" << currentKey.plugs << "\n";
+                            return;
+                        }
+
                     }
                 }
-
             }
+
         }
     }
     cout << "failed";
@@ -445,38 +456,13 @@ void outputFitnessMultimapCSV(string outputFile, multimap<double, enigmaKey>& fi
 int main(){
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
-    // testingKey.wheelOrder = "321";
-    // testingKey.initalSetting ="aeh";
-    // testingKey.ringSetting = "gto";
-    // testingKey.plugs = "aosduvpqiwrlmnbghkcxefjtzy";
-    testingKey.wheelOrder = "423";
-    testingKey.initalSetting ="gek";
-    testingKey.ringSetting = "efd";
-    testingKey.plugs = "dosaevpqiwrlmnbghkcxufjtzy";
+    testingKey.wheelOrder = "321";
+    testingKey.initalSetting ="aeh";
+    testingKey.ringSetting = "gto";
+    testingKey.plugs = "esvxanqprjkyufohgibtmcwdlz";
 
     string testCiphertext = enigma(testPlaintext, testingKey);
-    // testingKey.initalSetting = "aeh";
-    // cout << enigma(testCiphertext,testingKey) << "\n";
-
-    // testingKey.initalSetting = "bfh";
-    // cout << enigma(testCiphertext,testingKey)<< "\n";
-
-    // testingKey.initalSetting = "cgh";
-    // cout << enigma(testCiphertext,testingKey)<< "\n";
-
-    // testingKey.initalSetting = "hdh";
-    // cout << enigma(testCiphertext,testingKey)<< "\n";
-
-    // testingKey.initalSetting = "agh";
-    // cout << enigma(testCiphertext,testingKey)<< "\n";
-
-    // testingKey.initalSetting = "bhh";
-    // cout << enigma(testCiphertext,testingKey)<< "\n";
-
-
     overalAlgorithm(testCiphertext);
-
-
 
     
     // auto start = high_resolution_clock::now();
@@ -484,7 +470,6 @@ int main(){
     // auto stop = high_resolution_clock::now();
     // auto duration = duration_cast<microseconds>(stop - start);
     // cout << duration.count();
-
 
     return 1;
 }
