@@ -105,7 +105,7 @@ string slowEquivalentKeys(char slowIntialSetting, char slowRingSetting){
 }
 
 
-const int depthLetters[] = {4,0, 19};
+const int depthLetters[] = {4, 0, 19};
 void recursivePKeyTest(int depth, string baseKey){
     if (depth == 3){
         cout << baseKey;
