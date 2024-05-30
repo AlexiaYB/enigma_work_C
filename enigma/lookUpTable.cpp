@@ -231,8 +231,8 @@ int main(){
     testingKey.ringSetting = "aaa";
     testingKey.initalSetting ="aaa";
     
-    string testCiphertext = rotors(testPlaintext, testingKey);
-    lookupTableReader("123");
+    // string testCiphertext = rotors(testPlaintext, testingKey);
+    // lookupTableReader("123");
     // cout << fasterRotors(testCiphertext,testingKey);
     // cout << testCiphertext;
     // cout << controlledRotors('a',"bfx","aaa","123");
@@ -246,12 +246,26 @@ int main(){
     // auto duration = duration_cast<microseconds>(stop - start);
     // cout << duration.count();
 
-    string baseText = "";
-    int i;
-    for(i=0;i<17576;i++){
-        baseText += 'a';
+    int i,j,k,l;
+    for (i=1;i<6;i++){
+        for(j=1;j<6;j++){
+            if(i!=j){
+                for(k=1;k<6;k++){
+                    if(i!=k && j!=k){
+                        ofstream rFile(to_string(i) + to_string(j) + to_string(k)+".txt");
+                        for(l=0;l<26;l++){
+                            string baseText = "";
+                            int i;
+                            for(i=0;i<17576;i++){
+                                baseText += alphabet[l];
+                            }
+                            rFile << extendedRotors(baseText,testingKey)<< "\n";
+                        }
+                    }
+                }
+            }
+        }
     }
-    cout << extendedRotors(baseText,testingKey);
 
 
     return 1;
