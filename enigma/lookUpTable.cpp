@@ -155,16 +155,87 @@ string fasterRotors(string text, enigmaKey &currentKey){
     return outputText;
 }
 
+char controlledRotors(char letter, string initialSetttings, string ringSettings, string wheelOrder){
+    // first rotor pass
+    int j;
+    int intLetter = letter - 'a';
+    for(j=2;j>-1;j+=-1){
+        intLetter = mod(intLetter + initialSetttings[j]);
+        intLetter = mod(intLetter + wheels[(int)wheelOrder[j] - 49][
+            mod(intLetter - ringSettings[j])]);
+        intLetter = mod(intLetter - initialSetttings[j]);
+    }
+    // reflector
+    intLetter = reflectorUKWB(intLetter);
+    // second rotor pass
+    for(j=0;j<3;j++){
+        intLetter = mod(intLetter + initialSetttings[j]);
+        intLetter = mod(intLetter - wheels[(int)wheelOrder[j] - 49][
+            position(wheelsAlphabet[(int)wheelOrder[j] - 49], alphabet[mod(intLetter - ringSettings[j])])]);
+        intLetter = mod(intLetter - initialSetttings[j]);
+    }
+    return alphabet[intLetter];
+}
+
+string extendedRotors(string text, enigmaKey &currentKey){
+    int i,j;
+    int currentCharacter;
+    int currentMessageSettings[] = {(int) (currentKey.initalSetting[0] - 'a'),
+                                (int) (currentKey.initalSetting[1] - 'a'),
+                                (int) (currentKey.initalSetting[2] - 'a')};
+    const int numberRingSettings[] = {(int) (currentKey.ringSetting[0] - 'a'),
+                                (int) (currentKey.ringSetting[1] - 'a'),
+                                (int) (currentKey.ringSetting[2] - 'a')};
+    string finalText = text;
+
+    for (i=0;i<text.length();i++){
+        currentCharacter = text[i] - 'a';
+        // slow
+        if ((alphabet[currentMessageSettings[2]] == turnovers[(int)currentKey.wheelOrder[2]-49])&&(alphabet[currentMessageSettings[1]] == turnovers[(int)currentKey.wheelOrder[1]-49])){
+            currentMessageSettings[0] = mod(currentMessageSettings[0] + 1);
+        }
+        // middle
+        if (alphabet[currentMessageSettings[2]] == turnovers[(int)currentKey.wheelOrder[2] - 49]){
+            currentMessageSettings[1] = mod(currentMessageSettings[1] + 1);
+        }
+        // fast
+        currentMessageSettings[2] = mod(currentMessageSettings[2] + 1);
+
+        // first rotor pass
+        for(j=2;j>-1;j+=-1){
+            currentCharacter = mod(currentCharacter + currentMessageSettings[j]);
+            currentCharacter = mod(currentCharacter + wheels[(int)currentKey.wheelOrder[j] - 49][
+                mod(currentCharacter - numberRingSettings[j])]);
+            currentCharacter = mod(currentCharacter - currentMessageSettings[j]);
+        }
+        // reflector
+        currentCharacter = reflectorUKWB(currentCharacter);
+        // second rotor pass
+        for(j=0;j<3;j++){
+            currentCharacter = mod(currentCharacter + currentMessageSettings[j]);
+            currentCharacter = mod(currentCharacter - wheels[(int)currentKey.wheelOrder[j] - 49][
+                position(wheelsAlphabet[(int)currentKey.wheelOrder[j] - 49], alphabet[mod(currentCharacter - numberRingSettings[j])])]);
+            currentCharacter = mod(currentCharacter - currentMessageSettings[j]);
+        }
+        finalText[i] = alphabet[currentCharacter];
+    }
+    return finalText;
+}
+
+
+
 int main(){
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
     testingKey.wheelOrder = "123";
-    testingKey.ringSetting = "aaf";
+    testingKey.ringSetting = "aaa";
     testingKey.initalSetting ="aaa";
     
     string testCiphertext = rotors(testPlaintext, testingKey);
     lookupTableReader("123");
     // cout << fasterRotors(testCiphertext,testingKey);
+    // cout << testCiphertext;
+    // cout << controlledRotors('a',"bfx","aaa","123");
 
 
     // auto start = high_resolution_clock::now();
@@ -177,10 +248,10 @@ int main(){
 
     string baseText = "";
     int i;
-    for(i=0;i<16900;i++){
+    for(i=0;i<17576;i++){
         baseText += 'a';
     }
-    cout << rotors(baseText,testingKey);
+    cout << extendedRotors(baseText,testingKey);
 
 
     return 1;
