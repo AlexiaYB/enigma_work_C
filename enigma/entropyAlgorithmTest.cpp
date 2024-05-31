@@ -213,7 +213,7 @@ void rotorBruteForce(string ciphertext){
                 for (k=0;k<5;k++){
                     if (i != k && j != k){
                         currentKey.wheelOrder = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
-                        currentKey.ringSetting = "ayk";
+                        currentKey.ringSetting = "aqa";
                         currentKey.plugs = "";
                         currentKey.initalSetting = "aaa";
                         lookupTableCreator(currentKey);
@@ -317,8 +317,8 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
         multimap<double, enigmaKey>::iterator itr;
         multimap<double, enigmaKey> shortKeyList;
         string temp[26];
-        shortKeyList.clear();
-        for (i=0;i<26;i++){         
+        for (i=0;i<26;i++){ 
+            shortKeyList.clear();        
             selfSteckered = 0;
             if (alphabet[i] == baseKey[i]){
                 for(j=0;j<depth;j++){
@@ -354,8 +354,6 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
 void newOveralAlgorithm(string ciphertext){
     rotorBruteForce(ciphertext);
     cout << "rotorbrute force done" << "\n";
-    // generateUsedLookupTable(fullRotorKeys,E);
-    // cout << "lookup table generated" << "\n";
     recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys);
 }
 
@@ -363,10 +361,10 @@ void newOveralAlgorithm(string ciphertext){
 int main () {
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
-    testingKey.wheelOrder = "145";
-    testingKey.ringSetting = "ryk";
-    testingKey.initalSetting ="iym";
-    testingKey.plugs = "omtsexhgupkrbnajvldciqwfyz";
+    testingKey.wheelOrder = "512";
+    testingKey.ringSetting = "nqa";
+    testingKey.initalSetting ="etf";
+    testingKey.plugs = "abodrtzkujhlyqcwnexfivpsmg";
     
     // lookupTableCreator(testingKey);
     // testingKey.initalSetting ="iym";
