@@ -119,9 +119,12 @@ void lookupTableReader(string wheelOrder){
 }
 
 string fasterRotors(string text, enigmaKey &currentKey){
-    int i,j, tempInitial, tempRing, counter=0;
+    int i,j, tempInitial, tempRing, doubleStep, counter=0;
+    int ringCounter = currentKey.ringSetting[2] - 'a';
+    bool rings = false;
     string outputText;
 
+    // set initial position of counter
     for(i=0;i<3;i++){
         // check for initial settings over turnover
         if(((currentKey.initalSetting[i] - 'a')) > (turnovers[currentKey.wheelOrder[i] - '1'] - 'a')){
@@ -135,46 +138,43 @@ string fasterRotors(string text, enigmaKey &currentKey){
         }else{
             tempRing = -(currentKey.ringSetting[i]- 'a');
         }
-        // then add the adjustments (for rotor position & double stepping)
-        if(i == 0){
-            tempInitial *= 650;
-            tempRing *= 650;
-        }else {
-            tempInitial *= pow(26, 2-i);
-            tempRing *= pow(26, 2-i);
-        }
-
+        // then add the adjustments (for rotor position)
+        tempInitial *= pow(26, 2-i);
+        tempRing *= pow(26, 2-i);
         counter += tempInitial + tempRing;
     }
-    counter = mod(counter,16900);
+    counter = mod(counter,17576);
+
+    // figure out double step location
+    doubleStep = mod((turnovers[currentKey.wheelOrder[2] - '1'] -'a') - (currentKey.initalSetting[2]- 'a'));
+    doubleStep += mod((turnovers[currentKey.wheelOrder[1] - '1'] -'a') - (currentKey.initalSetting[1]- 'a')- 1) * 26;
+    doubleStep = mod(doubleStep + counter, 17576);
+
 
     for (j=0;j<text.length();j++){
-        outputText += currentLookuptable[text[j] - 'a'][mod(counter, 16900)];
+        counter = mod(counter, 17576);
+        // rings adjustment fix
+        if(mod(j,26) == (turnovers[currentKey.wheelOrder[2] - '1']-'a')){
+            rings = true;
+        }
+        if (ringCounter == 0){
+            rings = false;
+            ringCounter = currentKey.ringSetting[2] - 'a';
+        }
+        if (rings == true){
+            outputText += currentLookuptable[text[j] - 'a'][counter + 26];
+            ringCounter -= 1;
+        }else{
+            outputText += currentLookuptable[text[j] - 'a'][counter];
+        }
+        // double stepping fix 
+        if(counter  == doubleStep){
+            doubleStep = mod((doubleStep + 676), 17576);
+            counter += 26;
+        }
         counter ++;
     }
     return outputText;
-}
-
-char controlledRotors(char letter, string initialSetttings, string ringSettings, string wheelOrder){
-    // first rotor pass
-    int j;
-    int intLetter = letter - 'a';
-    for(j=2;j>-1;j+=-1){
-        intLetter = mod(intLetter + initialSetttings[j]);
-        intLetter = mod(intLetter + wheels[(int)wheelOrder[j] - 49][
-            mod(intLetter - ringSettings[j])]);
-        intLetter = mod(intLetter - initialSetttings[j]);
-    }
-    // reflector
-    intLetter = reflectorUKWB(intLetter);
-    // second rotor pass
-    for(j=0;j<3;j++){
-        intLetter = mod(intLetter + initialSetttings[j]);
-        intLetter = mod(intLetter - wheels[(int)wheelOrder[j] - 49][
-            position(wheelsAlphabet[(int)wheelOrder[j] - 49], alphabet[mod(intLetter - ringSettings[j])])]);
-        intLetter = mod(intLetter - initialSetttings[j]);
-    }
-    return alphabet[intLetter];
 }
 
 string extendedRotors(string text, enigmaKey &currentKey){
@@ -231,7 +231,7 @@ int main(){
     testingKey.ringSetting = "aaa";
     testingKey.initalSetting ="aaa";
     
-    // string testCiphertext = rotors(testPlaintext, testingKey);
+    string testCiphertext = rotors(testPlaintext, testingKey);
     // lookupTableReader("123");
     // cout << fasterRotors(testCiphertext,testingKey);
     // cout << testCiphertext;
@@ -239,12 +239,19 @@ int main(){
 
 
     // auto start = high_resolution_clock::now();
-    // // lookupTableReader("342");
+    // // lookupTableReader("123");
     // fasterRotors(testCiphertext,testingKey);
     // // rotors(testCiphertext,testingKey);
     // auto stop = high_resolution_clock::now();
     // auto duration = duration_cast<microseconds>(stop - start);
     // cout << duration.count();
+
+    // string baseText = "";
+    // int i;
+    // for(i=0;i<17576;i++){
+    //     baseText += 'a';
+    // }
+    // cout << extendedRotors(baseText,testingKey);
 
     int i,j,k,l;
     for (i=1;i<6;i++){
@@ -252,7 +259,8 @@ int main(){
             if(i!=j){
                 for(k=1;k<6;k++){
                     if(i!=k && j!=k){
-                        ofstream rFile(to_string(i) + to_string(j) + to_string(k)+".txt");
+                        testingKey.wheelOrder = to_string(i) + to_string(j) + to_string(k);
+                        ofstream rFile(testingKey.wheelOrder+".txt");
                         for(l=0;l<26;l++){
                             string baseText = "";
                             int i;
@@ -266,6 +274,7 @@ int main(){
             }
         }
     }
+
 
 
     return 1;
