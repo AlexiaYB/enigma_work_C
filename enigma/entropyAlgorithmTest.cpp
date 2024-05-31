@@ -224,7 +224,7 @@ void rotorBruteForce(string ciphertext){
                         currentKey.plugs = "";
                         currentKey.initalSetting = "aaa";
                         lookupTableCreator(currentKey);
-                        for(l=0;l<26;l++){for(m=0;m<26;m++){for (n=0;n<26;n++){
+                        for(l=0;l<26;l++){for(m=0;m<26;m++){for(n=0;n<26;n++){
                                     currentKey.initalSetting = string() + alphabet[l] + alphabet[m] + alphabet[n];
                                     fitness = entropy(fasterRotors(ciphertext,currentKey));
                                     fullRotorKeys.emplace(make_pair(fitness, currentKey));
@@ -256,13 +256,12 @@ string fasterEngima(string text, enigmaKey &currentKey){
 int main () {
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
-    testingKey.wheelOrder = "435";
-    testingKey.ringSetting = "aeh";
-    testingKey.initalSetting ="aaa";
+    testingKey.wheelOrder = "234";
+    testingKey.ringSetting = "beh";
+    testingKey.initalSetting ="gto";
     testingKey.plugs = "ceapbythojurmvidqlsgknwzfx";
     
     // lookupTableCreator(testingKey);
-    testingKey.initalSetting ="gto";
     string testCiphertext = enigma(testPlaintext,testingKey);
     // cout << entropy(fasterRotors(testCiphertext,testingKey));
 
@@ -275,6 +274,7 @@ int main () {
     cout << duration.count();
 
     outputFitnessMultimapCSV("output.csv", fullRotorKeys);
+    cout << "done";
     return 1;
 }
 
