@@ -119,10 +119,9 @@ void lookupTableReader(string wheelOrder){
 }
 
 string fasterRotors(string text, enigmaKey &currentKey){
-    int i,j, tempInitial, tempRing, doubleStep, counter=0;
-    int ringCounter = currentKey.ringSetting[2] - 'a';
-    bool rings = false;
+    int i,j,k, tempInitial, tempRing, doubleStep, counter=0;
     string outputText;
+    set<int> ringAffected;
 
     // set initial position of counter
     for(i=0;i<3;i++){
@@ -145,27 +144,24 @@ string fasterRotors(string text, enigmaKey &currentKey){
     }
     counter = mod(counter,17576);
 
+    // figure out things affected by ring settings
+    for (j=0;j<(currentKey.ringSetting[2] - 'a');j++){
+        ringAffected.insert(mod((turnovers[currentKey.wheelOrder[2] - '1'] - currentKey.initalSetting[2])+ j,26));
+    }
+
     // figure out double step location
     doubleStep = mod((turnovers[currentKey.wheelOrder[2] - '1'] -'a') - (currentKey.initalSetting[2]- 'a'));
     doubleStep += mod((turnovers[currentKey.wheelOrder[1] - '1'] -'a') - (currentKey.initalSetting[1]- 'a')- 1) * 26;
     doubleStep = mod(doubleStep + counter, 17576);
 
 
-    for (j=0;j<text.length();j++){
+    for (k=0;k<text.length();k++){
         counter = mod(counter, 17576);
         // rings adjustment fix
-        if(mod(j,26) == (turnovers[currentKey.wheelOrder[2] - '1'] - currentKey.initalSetting[2])){
-            rings = true;
-        }
-        if (ringCounter == 0){
-            rings = false;
-            ringCounter = currentKey.ringSetting[2] - 'a';
-        }
-        if (rings == true){
-            outputText += currentLookuptable[text[j] - 'a'][counter + 26];
-            ringCounter -= 1;
+        if (ringAffected.count(mod(k,26)) == 1){
+           outputText += currentLookuptable[text[k] - 'a'][mod(counter + 26,17576)]; 
         }else{
-            outputText += currentLookuptable[text[j] - 'a'][counter];
+            outputText += currentLookuptable[text[k] - 'a'][counter];
         }
         // double stepping fix 
         if(counter  == doubleStep){
@@ -228,7 +224,7 @@ int main(){
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
     testingKey.wheelOrder = "123";
-    testingKey.ringSetting = "aah";
+    testingKey.ringSetting = "aau";
     testingKey.initalSetting = "aaa";
     
     string testCiphertext = rotors(testPlaintext, testingKey);
@@ -237,13 +233,13 @@ int main(){
     // cout << testCiphertext;
 
 
-    // auto start = high_resolution_clock::now();
-    // // lookupTableReader("123");
-    // fasterRotors(testCiphertext,testingKey);
-    // // rotors(testCiphertext,testingKey);
-    // auto stop = high_resolution_clock::now();
-    // auto duration = duration_cast<microseconds>(stop - start);
-    // cout << duration.count();
+    auto start = high_resolution_clock::now();
+    // lookupTableReader("123");
+    fasterRotors(testCiphertext,testingKey);
+    // rotors(testCiphertext,testingKey);
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << duration.count();
 
     // string baseText = "";
     // int i;
