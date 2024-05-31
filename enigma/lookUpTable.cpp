@@ -154,7 +154,7 @@ string fasterRotors(string text, enigmaKey &currentKey){
     for (j=0;j<text.length();j++){
         counter = mod(counter, 17576);
         // rings adjustment fix
-        if(mod(j,26) == (turnovers[currentKey.wheelOrder[2] - '1']-'a')){
+        if(mod(j,26) == (turnovers[currentKey.wheelOrder[2] - '1'] - currentKey.initalSetting[2])){
             rings = true;
         }
         if (ringCounter == 0){
@@ -228,14 +228,13 @@ int main(){
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
     testingKey.wheelOrder = "123";
-    testingKey.ringSetting = "aaa";
-    testingKey.initalSetting ="aaa";
+    testingKey.ringSetting = "aah";
+    testingKey.initalSetting = "aaa";
     
     string testCiphertext = rotors(testPlaintext, testingKey);
-    // lookupTableReader("123");
-    // cout << fasterRotors(testCiphertext,testingKey);
+    lookupTableReader("123");
+    cout << fasterRotors(testCiphertext,testingKey);
     // cout << testCiphertext;
-    // cout << controlledRotors('a',"bfx","aaa","123");
 
 
     // auto start = high_resolution_clock::now();
@@ -253,31 +252,7 @@ int main(){
     // }
     // cout << extendedRotors(baseText,testingKey);
 
-    int i,j,k,l;
-    for (i=1;i<6;i++){
-        for(j=1;j<6;j++){
-            if(i!=j){
-                for(k=1;k<6;k++){
-                    if(i!=k && j!=k){
-                        testingKey.wheelOrder = to_string(i) + to_string(j) + to_string(k);
-                        ofstream rFile(testingKey.wheelOrder+".txt");
-                        for(l=0;l<26;l++){
-                            string baseText = "";
-                            int i;
-                            for(i=0;i<17576;i++){
-                                baseText += alphabet[l];
-                            }
-                            rFile << extendedRotors(baseText,testingKey)<< "\n";
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-
-    return 1;
+    // return 1;
 }
 
 
