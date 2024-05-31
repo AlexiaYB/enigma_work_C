@@ -454,8 +454,9 @@ int main(){
     testingKey.plugs = "ceapbythojurmvidqlsgknwzfx";
 
 
-    string testCiphertext = enigma(testPlaintext, testingKey);
-    newOveralAlgorithm(testCiphertext);
+    // string testCiphertext = enigma(testPlaintext, testingKey);
+    // newOveralAlgorithm(testCiphertext);
+    cout << randomPlugboard();
 
     // string key = alphabet;
     // while (key[1] != 'e' || key[0] != 'n' || key[19] != 'm'){

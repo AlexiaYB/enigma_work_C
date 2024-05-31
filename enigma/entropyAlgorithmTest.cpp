@@ -220,7 +220,7 @@ void rotorBruteForce(string ciphertext){
                 for (k=0;k<5;k++){
                     if (i != k && j != k){
                         currentKey.wheelOrder = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
-                        currentKey.ringSetting = "aeh";
+                        currentKey.ringSetting = "ayk";
                         currentKey.plugs = "";
                         currentKey.initalSetting = "aaa";
                         lookupTableCreator(currentKey);
@@ -256,13 +256,16 @@ string fasterEngima(string text, enigmaKey &currentKey){
 int main () {
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
-    testingKey.wheelOrder = "234";
-    testingKey.ringSetting = "beh";
-    testingKey.initalSetting ="gto";
-    testingKey.plugs = "ceapbythojurmvidqlsgknwzfx";
+    testingKey.wheelOrder = "145";
+    testingKey.ringSetting = "ryk";
+    testingKey.initalSetting ="iym";
+    testingKey.plugs = "omtsexhgupkrbnajvldciqwfyz";
     
     // lookupTableCreator(testingKey);
+    // testingKey.initalSetting ="iym";
     string testCiphertext = enigma(testPlaintext,testingKey);
+    // cout << fasterEngima(testCiphertext,testingKey);
+
     // cout << entropy(fasterRotors(testCiphertext,testingKey));
 
 
