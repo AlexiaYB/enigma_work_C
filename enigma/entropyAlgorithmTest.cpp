@@ -5,6 +5,7 @@
 #include <cmath> 
 #include <chrono>
 #include <map>
+#include <vector> 
 using namespace std;
 using namespace std::chrono;
 
@@ -28,7 +29,8 @@ const int wheels[5][26] = {{4, 9, 10, 2, 7, 1, 23, 9, 13, 16, 3, 8, 2, 9, 10, 18
 const string wheelsAlphabet[] = {"ekmflgdqvzntowyhxuspaibrcj","ajdksiruxblhwtmcqgznpyfvoe", "bdfhjlcprtxvznyeiwgakmusqo", "esovpzjayquirhxlnftgkdcmwb", "vzbrgityupsdnhlxawmjqofeck"};
 
 multimap<double, enigmaKey> fullRotorKeys;
-string currentLookuptable [26];
+vector<string> currentLookuptable;
+multimap<string,vector<string>> usedLookuptable;
 
 int mod(int currentNum, int modulus = 26){
     if (currentNum > 0){
@@ -90,17 +92,6 @@ double entropy(string text){
         itr++;
     }
     return -total;
-}
-
-void lookupTableReader(string wheelOrder){
-    ifstream dFile("lookup/"+ wheelOrder + ".txt");
-    string changedText;
-    int counter = 0;
-    while (getline(dFile, changedText, '\n')){
-        currentLookuptable[counter] = changedText;
-        counter ++;
-    }
-    return;
 }
 
 string fasterRotors(string text, enigmaKey &currentKey){
@@ -196,13 +187,14 @@ string rotors(string text, enigmaKey &currentKey){
 }
 
 void lookupTableCreator(enigmaKey &currentKey){
+    currentLookuptable.clear();
     int i,j;
     for(i=0;i<26;i++){
         string baseText = "";
         for(j=0;j<16900;j++){
             baseText += alphabet[i];
         }
-        currentLookuptable[i] = rotors(baseText, currentKey);
+        currentLookuptable.push_back(rotors(baseText, currentKey));
     }
 }
 
@@ -253,6 +245,116 @@ string fasterEngima(string text, enigmaKey &currentKey){
     return plugboardEncryptor(fasterRotors(plugboardEncryptor(text, currentKey.plugs), currentKey), currentKey.plugs);
 }
 
+// overal algorithm
+// parameters 
+const int E = 10000;
+const int A = 1000;
+const int X = 20;
+multimap<double, enigmaKey> ARotorKeys;
+
+// bool successCriterion(multimap<double, enigmaKey>& shortlistedKeys, int depthSize){
+//     double TopDifference = 0, otherMaxDifference, currentDifference, previous;
+//     multimap<double, enigmaKey>::iterator itr;
+//     itr = shortlistedKeys.begin();
+//     previous = itr -> first;
+//     itr ++;
+//     // cout << " "<< previous;
+//     while(itr != shortlistedKeys.end()) {
+//         if (TopDifference == 0){
+//             TopDifference = itr -> first - previous;
+//         }
+//         else {
+//             currentDifference = itr -> first - previous;
+//             if(currentDifference > otherMaxDifference){
+//                 otherMaxDifference = currentDifference;
+//             }
+//         }
+//         previous = itr -> first;
+//         itr ++;
+//     }
+//     cout << (TopDifference / otherMaxDifference) << " " << (TopDifference - otherMaxDifference)  << " ";
+//     if(TopDifference > (otherMaxDifference * (depthSize /4))){
+//         return true;
+//     }else{
+//         return false;
+//     }
+// }
+
+void generateUsedLookupTable(multimap <double, enigmaKey> allKeys, int sizeOfShortlist){
+    usedLookuptable.clear();
+    enigmaKey currentKey;
+    multimap<double, enigmaKey>::iterator itr;
+    int i;
+    string temp[26];
+    itr = allKeys.begin();
+    for (i=0;i<sizeOfShortlist;i++) {
+        currentKey = itr ->second;
+        if (usedLookuptable.count(currentKey.wheelOrder) == 0){
+            currentKey.initalSetting = "aaa";
+            lookupTableCreator(currentKey);
+            usedLookuptable.emplace(make_pair(currentKey.wheelOrder, currentLookuptable));
+        }
+        itr++;
+    }
+    return;
+}
+
+const int depthLetters[] = {4, 0, 19};
+const int depthSizeParameters[] = {E,A,X};
+void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<double, enigmaKey> &priorKeyList){
+    if (depth == 2){
+        outputFitnessMultimapCSV("output.csv", priorKeyList);
+    }
+    else if(alphabet[depthLetters[depth]] != baseKey[depthLetters[depth]]){
+        recursivePKeyTest(depth+1, baseKey, ciphertext, priorKeyList);
+    }
+    else{
+        int i, j, mapIterator, selfSteckered = 0;
+        string newKey;
+        enigmaKey currentKey;
+        multimap<double, enigmaKey>::iterator itr;
+        multimap<double, enigmaKey> shortKeyList;
+        string temp[26];
+        shortKeyList.clear();
+        for (i=0;i<26;i++){         
+            selfSteckered = 0;
+            if (alphabet[i] == baseKey[i]){
+                for(j=0;j<depth;j++){
+                    if (i == depthLetters[j]){
+                        selfSteckered = 1;
+                        break;
+                    }
+                }
+                if (selfSteckered == 0){
+                    newKey = baseKey;
+                    newKey[depthLetters[depth]] = alphabet[i];
+                    newKey[i] = alphabet[depthLetters[depth]];
+                    // take top X and try new plugboard
+                    itr = priorKeyList.begin();
+                    for (mapIterator=0;mapIterator<depthSizeParameters[depth];mapIterator++) {
+                        currentLookuptable.clear();
+                        currentKey = itr ->second;
+                        currentKey.plugs = newKey;
+                        currentLookuptable = usedLookuptable.find(currentKey.wheelOrder)-> second;
+                        shortKeyList.emplace(make_pair(entropy(fasterEngima(ciphertext,currentKey)), currentKey));
+                        itr++;
+                    }
+                    recursivePKeyTest(depth+1, newKey, ciphertext, shortKeyList);
+                }
+            }
+        }
+    }
+}
+
+void newOveralAlgorithm(string ciphertext){
+    rotorBruteForce(ciphertext);
+    cout << "rotorbrute force done" << "\n";
+    generateUsedLookupTable(fullRotorKeys,E);
+    cout << "lookup table generated" << "\n";
+    recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys);
+}
+
+
 int main () {
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
@@ -266,17 +368,15 @@ int main () {
     string testCiphertext = enigma(testPlaintext,testingKey);
     // cout << fasterEngima(testCiphertext,testingKey);
 
-    // cout << entropy(fasterRotors(testCiphertext,testingKey));
-
-
 
     auto start = high_resolution_clock::now();
-    rotorBruteForce(testCiphertext);
+    newOveralAlgorithm(testCiphertext);
+    // rotorBruteForce(testCiphertext);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << duration.count();
 
-    outputFitnessMultimapCSV("output.csv", fullRotorKeys);
+    // outputFitnessMultimapCSV("output.csv", fullRotorKeys);
     cout << "done";
     return 1;
 }
