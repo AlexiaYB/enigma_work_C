@@ -11,6 +11,9 @@
 using namespace std;
 using namespace std::chrono;
 
+// threading 
+mutex mx;
+
 const string alphabet = "abcdefghijklmnopqrstuvwxyz";
 // struct for keys
 struct enigmaKey { 
@@ -19,6 +22,7 @@ struct enigmaKey {
   string initalSetting;
   string plugs;
 };
+
 
 // rotor constants
 // add/minus 1
@@ -219,6 +223,7 @@ void rotorBruteForce(string ciphertext, string rings){
     int i,j,k,l,m,n, counter = 0;
     double fitness;
     enigmaKey currentKey;
+    multimap<double, enigmaKey> tempRotorKeys;
 
     // wheel order
     for(i=0;i<5;i++){
@@ -235,9 +240,13 @@ void rotorBruteForce(string ciphertext, string rings){
                         for(l=0;l<26;l++){for(m=0;m<26;m++){for(n=0;n<26;n++){
                                     currentKey.initalSetting = string() + alphabet[l] + alphabet[m] + alphabet[n];
                                     fitness = entropy(fasterRotors(ciphertext,currentKey));
+                                    // locks
+                                    lock_guard<mutex> lk(mx);
+                                    mx.lock();
                                     fullRotorKeys.emplace(make_pair(fitness, currentKey));
+                                    cout << currentKey.initalSetting << " done" << "\n";
+                                    mx.unlock();
                                 }}}
-                        cout << "wheel order "<< currentKey.wheelOrder << " complete" << "\n";
                     }}}}}
 }
 
@@ -316,6 +325,20 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
 //     recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys);
 // }
 
+void overheadThreads(string ciphertext, string baseRings){
+    string fastRings[] = {"a","h","o","v"};
+    thread t[4];
+    int i;
+    // spawn
+    for(i=0;i<4;i++){
+        t[i] = thread(&rotorBruteForce, ciphertext,baseRings + fastRings[i]);
+    }
+    // join
+    for(i=0;i<4;i++){
+        t[i].join();
+    }
+    return;
+}
 
 int main () {
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
@@ -324,17 +347,11 @@ int main () {
     testingKey.ringSetting = "nqy";
     testingKey.initalSetting ="etf";
     testingKey.plugs = "abodrtzkujhlyqcwnexfivpsmg";
-    string fastRings[] = {"a","h","o","v"};
-    string currentRings;
-    int i;
 
     string testCiphertext = enigma(testPlaintext,testingKey);
     
     auto start = high_resolution_clock::now();
-    for(i=0;i<4;i++){
-        rotorBruteForce(testCiphertext,"aq" + fastRings[i]);
-        cout << "fast ring " << fastRings[i] << " done" <<"\n";
-    }
+    overheadThreads(testCiphertext,"aq");
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << duration.count();
