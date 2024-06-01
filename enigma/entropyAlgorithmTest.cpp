@@ -227,10 +227,10 @@ multimap<string,vector<string>> rotorBruteForce(string ciphertext, string rings)
     vector<string> currentLookuptable;
 
     // wheel order
-    for(i=0;i<3;i++){
-        for (j=0;j<3;j++){
+    for(i=0;i<5;i++){
+        for (j=0;j<5;j++){
             if (i != j){
-                for (k=0;k<3;k++){
+                for (k=0;k<5;k++){
                     if (i != k && j != k){
                         currentKey.wheelOrder = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
                         currentKey.ringSetting = rings;
