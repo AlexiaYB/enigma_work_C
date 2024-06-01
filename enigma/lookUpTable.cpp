@@ -248,7 +248,7 @@ int main(){
     // }
     // cout << extendedRotors(baseText,testingKey);
 
-    // return 1;
+    return 1;
 }
 
 
