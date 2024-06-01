@@ -36,8 +36,6 @@ const string wheelsAlphabet[] = {"ekmflgdqvzntowyhxuspaibrcj","ajdksiruxblhwtmcq
 
 multimap<double, enigmaKey> fullRotorKeys;
 multimap<double, enigmaKey> finalPlugboardResults;
-vector<string> currentLookuptable;
-multimap<string,vector<string>> usedLookuptable;
 
 // tools 
 int mod(int currentNum, int modulus = 26){
@@ -168,19 +166,20 @@ string rotors(string text, enigmaKey &currentKey){
     return finalText;
 }
 
-void lookupTableCreator(enigmaKey &currentKey){
-    currentLookuptable.clear();
+vector<string> lookupTableCreator(enigmaKey &currentKey){
+    vector<string> lookuptablestore;
     int i,j;
     for(i=0;i<26;i++){
         string baseText = "";
         for(j=0;j<16900;j++){
             baseText += alphabet[i];
         }
-        currentLookuptable.push_back(rotors(baseText, currentKey));
+        lookuptablestore.push_back(rotors(baseText, currentKey));
     }
+    return lookuptablestore;
 }
 
-string fasterRotors(string text, enigmaKey &currentKey){
+string fasterRotors(string text, enigmaKey &currentKey, vector<string> currentLookuptable){
     int i,j, tempInitial, counter=0;
     string outputText;
 
@@ -213,41 +212,44 @@ string enigma(string text, enigmaKey &currentKey){
     return plugboardEncryptor(rotors(plugboardEncryptor(text, currentKey.plugs), currentKey), currentKey.plugs);
 }
 
-string fasterEngima(string text, enigmaKey &currentKey){
-    return plugboardEncryptor(fasterRotors(plugboardEncryptor(text, currentKey.plugs), currentKey), currentKey.plugs);
+string fasterEngima(string text, enigmaKey &currentKey, vector<string> currentLookuptable){
+    return plugboardEncryptor(fasterRotors(plugboardEncryptor(text, currentKey.plugs), currentKey, currentLookuptable), currentKey.plugs);
 }
 
 // rotor brute forcing 
-void rotorBruteForce(string ciphertext, string rings){
+multimap<string,vector<string>> rotorBruteForce(string ciphertext, string rings){
     // wheel order
     int i,j,k,l,m,n, counter = 0;
     double fitness;
     enigmaKey currentKey;
     multimap<double, enigmaKey> tempRotorKeys;
+    multimap<string,vector<string>> usedLookuptable;
+    vector<string> currentLookuptable;
 
     // wheel order
-    for(i=0;i<5;i++){
-        for (j=0;j<5;j++){
+    for(i=0;i<3;i++){
+        for (j=0;j<3;j++){
             if (i != j){
-                for (k=0;k<5;k++){
+                for (k=0;k<3;k++){
                     if (i != k && j != k){
                         currentKey.wheelOrder = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
                         currentKey.ringSetting = rings;
                         currentKey.plugs = "";
                         currentKey.initalSetting = "aaa";
-                        lookupTableCreator(currentKey);
+                        currentLookuptable =  lookupTableCreator(currentKey);
                         usedLookuptable.emplace(make_pair(currentKey.wheelOrder, currentLookuptable));
                         for(l=0;l<26;l++){for(m=0;m<26;m++){for(n=0;n<26;n++){
                                     currentKey.initalSetting = string() + alphabet[l] + alphabet[m] + alphabet[n];
-                                    fitness = entropy(fasterRotors(ciphertext,currentKey));
-                                    // locks
-                                    lock_guard<mutex> lk(mx);
-                                    mx.lock();
-                                    fullRotorKeys.emplace(make_pair(fitness, currentKey));
-                                    cout << currentKey.initalSetting << " done" << "\n";
-                                    mx.unlock();
+                                    fitness = entropy(fasterRotors(ciphertext,currentKey, currentLookuptable));
+                                    tempRotorKeys.emplace(make_pair(fitness, currentKey));
                                 }}}
+                    // locks
+                    lock_guard<mutex> guard(mx);
+                    fullRotorKeys.merge(tempRotorKeys);
+                    tempRotorKeys.clear();
+                    cout << currentKey.wheelOrder << " " << rings << " done\n";
                     }}}}}
+    return usedLookuptable;
 }
 
 // // output results for analysis 
@@ -271,59 +273,59 @@ multimap<double, enigmaKey> ARotorKeys;
 
 const int depthLetters[] = {4, 0, 19};
 const int depthSizeParameters[] = {E,A,X};
-void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<double, enigmaKey> &priorKeyList){
-    if (depth == 2){
-        finalPlugboardResults.merge(priorKeyList);
-    }
-    else if(alphabet[depthLetters[depth]] != baseKey[depthLetters[depth]]){
-        recursivePKeyTest(depth+1, baseKey, ciphertext, priorKeyList);
-    }
-    else{
-        int i, j, mapIterator, selfSteckered = 0;
-        string newKey;
-        enigmaKey currentKey;
-        multimap<double, enigmaKey>::iterator itr;
-        multimap<double, enigmaKey> shortKeyList;
-        string temp[26];
-        for (i=0;i<26;i++){ 
-            shortKeyList.clear();        
-            selfSteckered = 0;
-            if (alphabet[i] == baseKey[i]){
-                for(j=0;j<depth;j++){
-                    if (i == depthLetters[j]){
-                        selfSteckered = 1;
-                        break;
-                    }
-                }
-                if (selfSteckered == 0){
-                    newKey = baseKey;
-                    newKey[depthLetters[depth]] = alphabet[i];
-                    newKey[i] = alphabet[depthLetters[depth]];
-                    // take top X and try new plugboard
-                    itr = priorKeyList.begin();
-                    for (mapIterator=0;mapIterator<depthSizeParameters[depth];mapIterator++) {
-                        currentLookuptable.clear();
-                        currentKey = itr ->second;
-                        currentKey.plugs = newKey;
-                        currentLookuptable = usedLookuptable.find(currentKey.wheelOrder)-> second;
-                        shortKeyList.emplace(make_pair(entropy(fasterEngima(ciphertext,currentKey)), currentKey));
-                        itr++;
-                    }
-                    recursivePKeyTest(depth+1, newKey, ciphertext, shortKeyList);
-                    if(depth == 0){
-                        cout << newKey << " done\n";
-                    }
-                }
-            }
-        }
-    }
-}
-
-// void newOveralAlgorithm(string ciphertext){
-//     rotorBruteForce(ciphertext);
-//     cout << "rotorbrute force done" << "\n";
-//     recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys);
+// void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<double, enigmaKey> &priorKeyList){
+//     if (depth == 2){
+//         finalPlugboardResults.merge(priorKeyList);
+//     }
+//     else if(alphabet[depthLetters[depth]] != baseKey[depthLetters[depth]]){
+//         recursivePKeyTest(depth+1, baseKey, ciphertext, priorKeyList);
+//     }
+//     else{
+//         int i, j, mapIterator, selfSteckered = 0;
+//         string newKey;
+//         enigmaKey currentKey;
+//         multimap<double, enigmaKey>::iterator itr;
+//         multimap<double, enigmaKey> shortKeyList;
+//         string temp[26];
+//         for (i=0;i<26;i++){ 
+//             shortKeyList.clear();        
+//             selfSteckered = 0;
+//             if (alphabet[i] == baseKey[i]){
+//                 for(j=0;j<depth;j++){
+//                     if (i == depthLetters[j]){
+//                         selfSteckered = 1;
+//                         break;
+//                     }
+//                 }
+//                 if (selfSteckered == 0){
+//                     newKey = baseKey;
+//                     newKey[depthLetters[depth]] = alphabet[i];
+//                     newKey[i] = alphabet[depthLetters[depth]];
+//                     // take top X and try new plugboard
+//                     itr = priorKeyList.begin();
+//                     for (mapIterator=0;mapIterator<depthSizeParameters[depth];mapIterator++) {
+//                         currentLookuptable.clear();
+//                         currentKey = itr ->second;
+//                         currentKey.plugs = newKey;
+//                         currentLookuptable = usedLookuptable.find(currentKey.wheelOrder)-> second;
+//                         shortKeyList.emplace(make_pair(entropy(fasterEngima(ciphertext,currentKey)), currentKey));
+//                         itr++;
+//                     }
+//                     recursivePKeyTest(depth+1, newKey, ciphertext, shortKeyList);
+//                     if(depth == 0){
+//                         cout << newKey << " done\n";
+//                     }
+//                 }
+//             }
+//         }
+//     }
 // }
+
+void newOveralAlgorithm(string ciphertext, string rings){
+    multimap<string,vector<string>> usedLookuptable = rotorBruteForce(ciphertext, rings);
+    cout << "rotorbrute force done" << "\n";
+    // recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys);
+}
 
 void overheadThreads(string ciphertext, string baseRings){
     string fastRings[] = {"a","h","o","v"};
@@ -343,7 +345,7 @@ void overheadThreads(string ciphertext, string baseRings){
 int main () {
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
-    testingKey.wheelOrder = "512";
+    testingKey.wheelOrder = "321";
     testingKey.ringSetting = "nqy";
     testingKey.initalSetting ="etf";
     testingKey.plugs = "abodrtzkujhlyqcwnexfivpsmg";
