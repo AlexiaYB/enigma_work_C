@@ -377,65 +377,101 @@ string randomPlugboard(string base){
     return new_swaps;
 }
 
-void neighbours_plugboard(string swaps, set<string> &neighbours){
-    int i,j, counter = 0;
-    string newSwaps;
-    for(i=0;i<25;i++){
-        if (i != 0 && i != 4 && i != swaps[0]-'a' && i != swaps[4]-'a' ){
-        for(j=1;j<(25-i);j++){
-            if( i+j != 4 && i+j != swaps[0]-'a' && i+j != swaps[4]-'a'){
-            if((alphabet[i+j] != swaps[i]) && ((alphabet[i+j] != swaps[i+j]) || (alphabet[i] != swaps[i]))){
-                // either in pair or duplicate doubled  case
-                newSwaps = swaps;
-                if(swaps[i] == alphabet[i]){
-                    // current letter doubled case
-                    newSwaps[i] = alphabet[i+j];
-                    newSwaps[i+j] = alphabet[i];
-                    newSwaps[swaps[i+j] - 'a'] = swaps[i+j];
-                }else if (swaps[i+j] == alphabet[i+j]){
-                    // new letter doubled case
-                    newSwaps[i] = alphabet[i+j];
-                    newSwaps[i+j] = alphabet[i];
-                    newSwaps[swaps[i] - 'a'] = swaps[i];
-                }else{
-                    // two pairs case
-                    newSwaps[i] = swaps[i+j];
-                    newSwaps[i+j] = swaps[i];
-                    newSwaps[swaps[i+j] - 'a'] = alphabet[i];
-                    newSwaps[swaps[i] - 'a'] = alphabet[i+j];
-                    
-                }
-                neighbours.insert(newSwaps);
+vector<string> plugboardNeighbours(string base){
+    vector<string> results;
+    vector<vector<int>> pairChangerList;
+    int i;
+    vector<int> selfChangerList;
+    int aPair = base[0] - 'a';
+    int ePair = base[4] - 'a';
+    // create changerList
+    for(i=1;i<25;i++){
+        if(i!= 4 && i!=aPair && i!=ePair){
+            if(base[i] == alphabet[i]){
+                selfChangerList.push_back(base[i] - 'a');
+            }else if (base[i] -'a' > i){
+                vector<int> t({base[i] - 'a', i});
+                pairChangerList.push_back(t);
             }
-            }
-            
-        }
         }
     }
-    return;
+    // use to change base
+    string currentplugs;
+    vector<int> pair1, pair2;
+    int self1, self2;
+    int pairSize = pairChangerList.size();
+    int selfSize = selfChangerList.size();
+    int j, k;
+    // pairs
+    for(i=0;i<pairSize;i++){
+        pair1 = pairChangerList[i];
+        for(j=(i+1); j<pairSize; j++){
+            pair2 = pairChangerList[j]; currentplugs = base; 
+            currentplugs[pair1[0]] = base[pair2[0]];
+            currentplugs[pair2[0]] = base[pair1[0]];
+            currentplugs[pair1[1]] = base[pair2[1]];
+            currentplugs[pair2[1]] = base[pair1[1]];
+            results.push_back(currentplugs);
+            currentplugs = base;
+            currentplugs[pair1[0]] = base[pair2[1]];
+            currentplugs[pair2[1]] = base[pair1[0]];
+            currentplugs[pair1[1]] = base[pair2[0]];
+            currentplugs[pair2[0]] = base[pair1[1]];
+            results.push_back(currentplugs);
+        }
+        for(j=0;j<selfSize;j++){
+            self1 = selfChangerList[j]; currentplugs = base;
+            currentplugs[pair1[0]] = alphabet[selfChangerList[j]];
+            currentplugs[selfChangerList[j]] = alphabet[pair1[0]];
+            currentplugs[pair1[1]] = alphabet[pair1[1]];
+            results.push_back(currentplugs);
+            currentplugs = base;
+            currentplugs[pair1[1]] = alphabet[selfChangerList[j]];
+            currentplugs[selfChangerList[j]] = alphabet[pair1[1]];
+            currentplugs[pair1[0]] = alphabet[pair1[0]];
+            results.push_back(currentplugs);
+        }
+    }
+
+    // self
+    for(i=0;i<selfSize;i++){
+        self1 = selfChangerList[i];
+        for(j=(i+1); j<selfSize; j++){
+            self2 = selfChangerList[j];
+            for(k=0;k<pairSize;k++){
+                pair1 = pairChangerList[k];
+                currentplugs = base;
+                currentplugs[self1] = alphabet[self2];
+                currentplugs[self2] = alphabet[self1];
+                currentplugs[pair1[0]] = alphabet[pair1[0]];
+                currentplugs[pair1[1]] = alphabet[pair1[1]];
+                results.push_back(currentplugs);
+            }
+        }
+    }
+
+    return results;
 }
 
 struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
     readQuadgramsCSV();
     string testPlaintext;
     double bestFitness, currentFitness;
-    set<string> neighbours;
+    vector<string> neighbours;
     enigmaKey bestKey = firstKey;
     bestKey.plugs = randomPlugboard(bestKey.plugs);
     enigmaKey currentKey = bestKey;
     int i, stuck = 0;
     int breakFlag = 0;
     vector<string> lookupTable = lookupTableCreator(bestKey);
-
     testPlaintext = fasterEngima(ciphertext, bestKey, lookupTable);
     bestFitness = quadgramFitness(testPlaintext);
-
     while (stuck == 0){
         stuck = 1;
         breakFlag = 0;
         neighbours.clear();
-        neighbours_plugboard(bestKey.plugs, neighbours);
-        set<string>::iterator itr;
+        neighbours = plugboardNeighbours(bestKey.plugs);
+        vector<string>::iterator itr;
         for (itr = neighbours.begin(); itr != neighbours.end(); itr++) {
             if(breakFlag == 0){
                 currentKey.plugs = *itr;
@@ -451,6 +487,7 @@ struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
             }
         }
     }
+    cout << bestKey.plugs << "," << bestFitness << "\n";
     return bestKey;
 }
 
@@ -579,13 +616,20 @@ int main () {
     testingKey.initalSetting ="rtc";
     testingKey.plugs = "abcdrfghijklmnopqestuvwxyz";
 
+    // plugboardNeighbours("abodrtzkujhlyqcwnexfivpsmg");
+
+
     enigmaKey adjusted = fastRingAdjustment(testingKey,testCiphertext);
     // enigmaKey final = fastRingAdjustment(plugboardHC(adjusted,testCiphertext),testCiphertext);
     // cout << final.wheelOrder << "\n";
     // cout << final.initalSetting << "\n";
     // cout << final.ringSetting << "\n";
     // cout << final.plugs << "\n";
+    int i;
+    for(i=0; i<100;i++){
     plugboardHC(adjusted,testCiphertext);
+    }
+
     cout << "done";
     return 1;
 }
