@@ -350,34 +350,6 @@ struct enigmaKey fastRingAdjustment(enigmaKey &firstKey, string ciphertext){
 }
 
 // plugboard hill climb
-string plugboardBruteforce(enigmaKey &baseKey, string ciphertext){
-    readQuadgramsCSV();
-    int i;
-    vector<string> lookupTable = lookupTableCreator(baseKey);
-    enigmaKey currentKey = baseKey;
-    string plugs = baseKey.plugs;
-    string bestPlugs;
-    double bestFitness = 100000;
-    double currentFitness;
-    int ePair = plugs[4] -'a';
-    int aPair = plugs[0] - 'a';
-    for(i-1;i<25;i++){
-        if(i != 4 & i != ePair & i != aPair){
-            plugs = baseKey.plugs;
-            plugs[i] = alphabet[19];
-            plugs[19] = alphabet[i];
-            currentKey.plugs = plugs;
-            currentFitness = entropy(fasterEnigma(ciphertext,currentKey,lookupTable));
-            if(bestFitness > currentFitness){
-                bestFitness = currentFitness;
-                bestPlugs = plugs;
-            }
-
-        }
-    }
-    return bestPlugs;
-}
-
 string randomPlugboard(string base){
     // a new random plugboard each second
     int i,randomValue1,randomValue2,In1,In2, aePairs = 0;
@@ -524,7 +496,6 @@ struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
 }
 
 
-
 // overal algorithm
 
 // parameters 
@@ -633,22 +604,20 @@ int main () {
 
     string testCiphertext = enigma(testPlaintext,testingKey);
 
-    // multimap<double, enigmaKey> fullRotorKeys;
     
     // auto start = high_resolution_clock::now();
     // newOveralAlgorithm(testCiphertext,"q");
-    // // rotorBruteForce(testCiphertext,"aqy",fullRotorKeys);
     // auto stop = high_resolution_clock::now();
     // auto duration = duration_cast<microseconds>(stop - start);
     // cout << duration.count();
 
     // outputFitnessMultimapCSV("output.csv", finalPlugboardResults);
-    // outputFitnessMultimapCSV("output.csv", fullRotorKeys);
 
+    // post processing
+    // top key
     testingKey.ringSetting = "aqv";
     testingKey.initalSetting ="rtc";
     testingKey.plugs = "abcdrfghijklmnopqestuvwxyz";
-
 
     enigmaKey firstRingAdjust = fastRingAdjustment(testingKey,testCiphertext);
     enigmaKey firstPlugAdjust = plugboardHC(firstRingAdjust,testCiphertext);
