@@ -9,6 +9,8 @@
 #include <thread>
 #include <mutex>
 #include <unordered_map>
+#include <iomanip> 
+#include <limits>
 using namespace std;
 using namespace std::chrono;
 
@@ -36,6 +38,34 @@ const int wheels[5][26] = {{4, 9, 10, 2, 7, 1, 23, 9, 13, 16, 3, 8, 2, 9, 10, 18
 const string wheelsAlphabet[] = {"ekmflgdqvzntowyhxuspaibrcj","ajdksiruxblhwtmcqgznpyfvoe", "bdfhjlcprtxvznyeiwgakmusqo", "esovpzjayquirhxlnftgkdcmwb", "vzbrgityupsdnhlxawmjqofeck"};
 
 multimap<double, enigmaKey> finalPlugboardResults;
+
+// plugboard things
+const int qlDatasetLen = 40629;
+map<string,double> quadgrams;
+
+// files 
+void readQuadgramsCSV(){
+    ifstream qFile("short_quadgram_log_frequency.csv"); 
+    string text, qString;
+    int column= 0, row = 0;
+    while (getline(qFile, text, '\n')) {
+        if (column != 0){
+            stringstream ss(text); 
+            while (getline(ss, text, ',')){
+                if (row==0){
+                    qString = text;
+                }
+                else{
+                    quadgrams.emplace(make_pair(qString, stod(text)));
+                }
+                row ++;
+            }
+        }
+        column ++;
+        row = 0;
+    }
+    return;
+}
 
 // tools 
 int mod(int currentNum, int modulus = 26){
@@ -87,7 +117,7 @@ void frequenciesCountPercentages(map<char, double> &frequenciesPMap, string text
     }
 }
 
-// fitness functioned 
+// fitness functions
 double entropy(string text){
     double current, total = 0;
     map<char, double> Pcounts;
@@ -99,6 +129,26 @@ double entropy(string text){
         itr++;
     }
     return -total;
+}
+
+double quadgramFitness(string text){
+    int i,j;
+    double sum = 0., value = 0.;
+    string currentQuadgram = "aaaa";
+    for(i=0;i<(text.length()-3);i++){
+        for(j=0;j<4;j++){
+            currentQuadgram[j] = text[i+j];
+        }
+        value = quadgrams[currentQuadgram];
+        if(value != 0){
+            sum += value;
+        }
+        else {
+            sum += -4.000000000000196;
+        }
+    }
+    
+    return sum;
 }
 
 // base encryptors 
@@ -268,7 +318,7 @@ unordered_map<string,vector<string>> rotorBruteForce(string ciphertext, string r
 }
 
 // output results for analysis 
-void outputFitnessMultimapCSV(string outputFile, multimap<double, enigmaKey>& fitnessMultimap){
+void outputFitnessMultimapCSV(string outputFile, multimap<double, enigmaKey> &fitnessMultimap){
     ofstream fout(outputFile);
     multimap<double, enigmaKey>::iterator itr = fitnessMultimap.begin();
     fout << "wheelOrder" <<","<< "initialSetting" << ","<< "ring setting" << ","<< "plugboard"<<","<<"evaluationStatistic"<< "\n";
@@ -280,8 +330,8 @@ void outputFitnessMultimapCSV(string outputFile, multimap<double, enigmaKey>& fi
 }
 
 // finalising functions
-struct enigmaKey fastRingAdjustment(enigmaKey &currentKey, string ciphertext){
-    enigmaKey bestKey;
+struct enigmaKey fastRingAdjustment(enigmaKey &firstKey, string ciphertext){
+    enigmaKey bestKey, currentKey = firstKey;
     int i, baseRingNum = currentKey.ringSetting[2] - 'a';
     int baseInitialNum = currentKey.initalSetting[2] -'a';
     
@@ -297,6 +347,114 @@ struct enigmaKey fastRingAdjustment(enigmaKey &currentKey, string ciphertext){
     }
     return bestKey;
 }
+
+// plugboard hill climb
+string randomPlugboard(string base){
+    // a new random plugboard each second
+    int i,randomValue1,randomValue2,In1,In2;
+    string new_swaps = base;
+    for(i=0;i<10;i++){
+        In1 = In2 = 0;
+        while ((In1 + In2) != 2){
+            if (In1 != 1){
+                randomValue1 = rand()%26;
+            }
+            if (In2 != 1){
+                randomValue2 = rand()%26;
+            }
+            if(randomValue1 != randomValue2){
+                if((new_swaps[randomValue1] - 'a') ==  randomValue1 && new_swaps[randomValue1] != 'a' && new_swaps[randomValue1] != 'e'){
+                    In1 = 1;
+                }
+                if((new_swaps[randomValue2] - 'a') ==  randomValue2 && new_swaps[randomValue2] != 'a' && new_swaps[randomValue2] != 'e'){
+                    In2 = 1;
+                }
+            }
+        }
+        new_swaps[randomValue1] = alphabet[randomValue2];
+        new_swaps[randomValue2] = alphabet[randomValue1];
+    }
+    return new_swaps;
+}
+
+void neighbours_plugboard(string swaps, set<string> &neighbours){
+    int i,j, counter = 0;
+    string newSwaps;
+    for(i=0;i<25;i++){
+        if (i != 0 && i != 4 && i != swaps[0]-'a' && i != swaps[4]-'a' ){
+        for(j=1;j<(25-i);j++){
+            if( i+j != 4 && i+j != swaps[0]-'a' && i+j != swaps[4]-'a'){
+            if((alphabet[i+j] != swaps[i]) && ((alphabet[i+j] != swaps[i+j]) || (alphabet[i] != swaps[i]))){
+                // either in pair or duplicate doubled  case
+                newSwaps = swaps;
+                if(swaps[i] == alphabet[i]){
+                    // current letter doubled case
+                    newSwaps[i] = alphabet[i+j];
+                    newSwaps[i+j] = alphabet[i];
+                    newSwaps[swaps[i+j] - 'a'] = swaps[i+j];
+                }else if (swaps[i+j] == alphabet[i+j]){
+                    // new letter doubled case
+                    newSwaps[i] = alphabet[i+j];
+                    newSwaps[i+j] = alphabet[i];
+                    newSwaps[swaps[i] - 'a'] = swaps[i];
+                }else{
+                    // two pairs case
+                    newSwaps[i] = swaps[i+j];
+                    newSwaps[i+j] = swaps[i];
+                    newSwaps[swaps[i+j] - 'a'] = alphabet[i];
+                    newSwaps[swaps[i] - 'a'] = alphabet[i+j];
+                    
+                }
+                neighbours.insert(newSwaps);
+            }
+            }
+            
+        }
+        }
+    }
+    return;
+}
+
+struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
+    readQuadgramsCSV();
+    string testPlaintext;
+    double bestFitness, currentFitness;
+    set<string> neighbours;
+    enigmaKey bestKey = firstKey;
+    bestKey.plugs = randomPlugboard(bestKey.plugs);
+    enigmaKey currentKey = bestKey;
+    int i, stuck = 0;
+    int breakFlag = 0;
+    vector<string> lookupTable = lookupTableCreator(bestKey);
+
+    testPlaintext = fasterEngima(ciphertext, bestKey, lookupTable);
+    bestFitness = quadgramFitness(testPlaintext);
+
+    while (stuck == 0){
+        stuck = 1;
+        breakFlag = 0;
+        neighbours.clear();
+        neighbours_plugboard(bestKey.plugs, neighbours);
+        set<string>::iterator itr;
+        for (itr = neighbours.begin(); itr != neighbours.end(); itr++) {
+            if(breakFlag == 0){
+                currentKey.plugs = *itr;
+                testPlaintext = fasterEngima(ciphertext,currentKey, lookupTable);
+                currentFitness = quadgramFitness(testPlaintext);
+                if(bestFitness < currentFitness){
+                    bestKey = currentKey;
+                    bestFitness = currentFitness;
+                    stuck = 0;
+                    breakFlag = 1;
+                    break;
+                }
+            }
+        }
+    }
+    return bestKey;
+}
+
+
 
 // overal algorithm
 
@@ -395,6 +553,7 @@ void newOveralAlgorithm(string ciphertext, string middleRing){
 
 
 int main () {
+    srand((unsigned) time(NULL));
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
     testingKey.wheelOrder = "321";
@@ -418,12 +577,15 @@ int main () {
 
     testingKey.ringSetting = "aqv";
     testingKey.initalSetting ="rtc";
-    // testingKey.plugs = "abcdrfghijklmnopqestuvwxyz";
+    testingKey.plugs = "abcdrfghijklmnopqestuvwxyz";
 
     enigmaKey adjusted = fastRingAdjustment(testingKey,testCiphertext);
-    cout << adjusted.initalSetting << "\n";
-    cout << adjusted.ringSetting << "\n";
-
+    // enigmaKey final = fastRingAdjustment(plugboardHC(adjusted,testCiphertext),testCiphertext);
+    // cout << final.wheelOrder << "\n";
+    // cout << final.initalSetting << "\n";
+    // cout << final.ringSetting << "\n";
+    // cout << final.plugs << "\n";
+    plugboardHC(adjusted,testCiphertext);
     cout << "done";
     return 1;
 }
