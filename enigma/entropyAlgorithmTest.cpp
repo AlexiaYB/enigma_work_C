@@ -8,6 +8,7 @@
 #include <vector> 
 #include <thread>
 #include <mutex>
+#include <unordered_map>
 using namespace std;
 using namespace std::chrono;
 
@@ -178,6 +179,24 @@ vector<string> lookupTableCreator(enigmaKey &currentKey){
     return lookuptablestore;
 }
 
+unordered_map<string,vector<string>> cullOveralLookupTable(unordered_map<string,vector<string>> overalLookupTable, multimap<double, enigmaKey> referenceTable, int newLength){
+    int i;
+    enigmaKey currentKey;
+    string searchKey;
+    multimap<double, enigmaKey>::iterator itr;
+    unordered_map<string,vector<string>> shortLookupTable;
+    itr = referenceTable.begin();
+    for (i=0;i<newLength;i++){
+        currentKey = itr ->second;
+        searchKey = currentKey.wheelOrder + currentKey.ringSetting;
+        if (shortLookupTable.count(searchKey) == 0){
+        shortLookupTable.emplace(make_pair(searchKey, overalLookupTable.find(searchKey) -> second));
+        }
+        itr++;
+    }
+    return shortLookupTable;
+}
+
 string fasterRotors(string text, enigmaKey &currentKey, vector<string> currentLookupTable){
     int i,j, tempInitial, counter=0;
     string outputText;
@@ -216,12 +235,12 @@ string fasterEngima(string text, enigmaKey &currentKey, vector<string> currentLo
 }
 
 // rotor brute forcing 
-multimap<string,vector<string>> rotorBruteForce(string ciphertext, string rings, multimap<double, enigmaKey> &rotorKeysOut){
+unordered_map<string,vector<string>> rotorBruteForce(string ciphertext, string rings, multimap<double, enigmaKey> &rotorKeysOut){
     // wheel order
     int i,j,k,l,m,n, counter = 0;
     double fitness;
     enigmaKey currentKey;
-    multimap<string,vector<string>> usedLookupTable;
+    unordered_map<string,vector<string>> usedLookupTable;
     vector<string> currentLookupTable;
 
     // wheel order
@@ -248,7 +267,7 @@ multimap<string,vector<string>> rotorBruteForce(string ciphertext, string rings,
     return usedLookupTable;
 }
 
-// // output results for analysis 
+// output results for analysis 
 void outputFitnessMultimapCSV(string outputFile, multimap<double, enigmaKey>& fitnessMultimap){
     ofstream fout(outputFile);
     multimap<double, enigmaKey>::iterator itr = fitnessMultimap.begin();
@@ -260,24 +279,26 @@ void outputFitnessMultimapCSV(string outputFile, multimap<double, enigmaKey>& fi
     fout.close();
 }
 
-// overal algorithm
-multimap<string,vector<string>> cullOveralLookupTable(multimap<string,vector<string>> overalLookupTable, multimap<double, enigmaKey> referenceTable, int newLength){
-    int i;
-    enigmaKey currentKey;
-    string searchKey;
-    multimap<double, enigmaKey>::iterator itr;
-    multimap<string,vector<string>> shortLookupTable;
-    itr = referenceTable.begin();
-    for (i=0;i<newLength;i++){
-        currentKey = itr ->second;
-        searchKey = currentKey.wheelOrder + currentKey.ringSetting;
-        if (shortLookupTable.count(searchKey) == 0){
-        shortLookupTable.emplace(make_pair(searchKey, overalLookupTable.find(searchKey) -> second));
+// finalising functions
+struct enigmaKey fastRingAdjustment(enigmaKey &currentKey, string ciphertext){
+    enigmaKey bestKey;
+    int i, baseRingNum = currentKey.ringSetting[2] - 'a';
+    int baseInitialNum = currentKey.initalSetting[2] -'a';
+    
+    double currentEntropy, bestEntropy = 1000000;
+    for(i=(baseRingNum-3);i<(baseRingNum+4);i++){
+        currentKey.ringSetting[2] = alphabet[i];
+        currentKey.initalSetting[2] = alphabet[mod(baseInitialNum + (i-baseRingNum))];
+        currentEntropy = entropy(enigma(ciphertext,currentKey));
+        if (currentEntropy < bestEntropy){
+            bestEntropy = currentEntropy;
+            bestKey = currentKey;
         }
-        itr++;
     }
-    return shortLookupTable;
+    return bestKey;
 }
+
+// overal algorithm
 
 // parameters 
 const int E = 5000;
@@ -285,7 +306,7 @@ const int A = 1000;
 
 const int depthLetters[] = {4,0};
 const int depthSizeParameters[] = {E,A};
-void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<double, enigmaKey> &priorKeyList, multimap<string,vector<string>> overalLookupTable){
+void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<double, enigmaKey> &priorKeyList, unordered_map<string,vector<string>> overalLookupTable){
     if (depth == 2){
         finalPlugboardResults.merge(priorKeyList);
     }
@@ -299,7 +320,7 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
         multimap<double, enigmaKey>::iterator itr;
         multimap<double, enigmaKey> shortKeyList;
         vector<string> currentLookupTable;
-        multimap<string,vector<string>> shortLookupTable;
+        unordered_map<string,vector<string>> shortLookupTable;
         for (i=0;i<26;i++){ 
             shortKeyList.clear();        
             selfSteckered = 0;
@@ -322,7 +343,9 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
                         currentKey.plugs = newKey;
                         searchKey = currentKey.wheelOrder + currentKey.ringSetting;
                         currentLookupTable = overalLookupTable.find(searchKey)-> second;
-                        shortLookupTable.emplace(make_pair(searchKey, currentLookupTable));
+                        if (shortLookupTable.count(searchKey) == 0){
+                            shortLookupTable.emplace(make_pair(searchKey, currentLookupTable));
+                        }
                         shortKeyList.emplace(make_pair(entropy(fasterEngima(ciphertext,currentKey, currentLookupTable)), currentKey));
                         itr++;
                     }
@@ -341,13 +364,16 @@ void newOveralAlgorithm(string ciphertext, string middleRing){
     string fastRings[] = {"a","h","o","v"};
     multimap<double, enigmaKey> fullRotorKeys;
     int i;
-    multimap<string,vector<string>> overalLookupTable;
+    unordered_map<string,vector<string>> overalLookupTable;
+    unordered_map<string,vector<string>> shortLookupTable;
     for(i=0;i<4;i++){
         overalLookupTable.merge(rotorBruteForce(ciphertext, "a"+ middleRing + fastRings[i], fullRotorKeys));
          cout << "rotorbrute force " << "a"+ middleRing + fastRings[i] << " done" << "\n";
     }
-    recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys, cullOveralLookupTable(overalLookupTable,fullRotorKeys,E));
+    shortLookupTable = cullOveralLookupTable(overalLookupTable,fullRotorKeys,E);
+    recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys, shortLookupTable);
 }
+
 
 // void overheadThreads(string ciphertext, string baseRings){
 //     string fastRings[] = {"a","h","o","v"};
@@ -365,6 +391,9 @@ void newOveralAlgorithm(string ciphertext, string middleRing){
 //     return;
 // }
 
+
+
+
 int main () {
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
@@ -375,17 +404,25 @@ int main () {
 
     string testCiphertext = enigma(testPlaintext,testingKey);
 
-    multimap<double, enigmaKey> fullRotorKeys;
+    // multimap<double, enigmaKey> fullRotorKeys;
     
-    auto start = high_resolution_clock::now();
+    // auto start = high_resolution_clock::now();
     // newOveralAlgorithm(testCiphertext,"q");
-    rotorBruteForce(testCiphertext,"aqy",fullRotorKeys);
-    auto stop = high_resolution_clock::now();
-    auto duration = duration_cast<microseconds>(stop - start);
-    cout << duration.count();
+    // // rotorBruteForce(testCiphertext,"aqy",fullRotorKeys);
+    // auto stop = high_resolution_clock::now();
+    // auto duration = duration_cast<microseconds>(stop - start);
+    // cout << duration.count();
 
     // outputFitnessMultimapCSV("output.csv", finalPlugboardResults);
-    outputFitnessMultimapCSV("output.csv", fullRotorKeys);
+    // outputFitnessMultimapCSV("output.csv", fullRotorKeys);
+
+    testingKey.ringSetting = "aqv";
+    testingKey.initalSetting ="rtc";
+    // testingKey.plugs = "abcdrfghijklmnopqestuvwxyz";
+
+    enigmaKey adjusted = fastRingAdjustment(testingKey,testCiphertext);
+    cout << adjusted.initalSetting << "\n";
+    cout << adjusted.ringSetting << "\n";
 
     cout << "done";
     return 1;
