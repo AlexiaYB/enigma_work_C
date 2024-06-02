@@ -218,13 +218,16 @@ string rotors(string text, enigmaKey &currentKey){
 
 vector<string> lookupTableCreator(enigmaKey &currentKey){
     vector<string> lookuptablestore;
+    enigmaKey copy = currentKey;
+    copy.initalSetting = "aaa";
+    copy.plugs = "";
     int i,j;
     for(i=0;i<26;i++){
         string baseText = "";
         for(j=0;j<16900;j++){
             baseText += alphabet[i];
         }
-        lookuptablestore.push_back(rotors(baseText, currentKey));
+        lookuptablestore.push_back(rotors(baseText, copy));
     }
     return lookuptablestore;
 }
@@ -280,7 +283,7 @@ string enigma(string text, enigmaKey &currentKey){
     return plugboardEncryptor(rotors(plugboardEncryptor(text, currentKey.plugs), currentKey), currentKey.plugs);
 }
 
-string fasterEngima(string text, enigmaKey &currentKey, vector<string> currentLookupTable){
+string fasterEnigma(string text, enigmaKey &currentKey, vector<string> currentLookupTable){
     return plugboardEncryptor(fasterRotors(plugboardEncryptor(text, currentKey.plugs), currentKey, currentLookupTable), currentKey.plugs);
 }
 
@@ -301,8 +304,6 @@ unordered_map<string,vector<string>> rotorBruteForce(string ciphertext, string r
                     if (i != k && j != k){
                         currentKey.wheelOrder = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
                         currentKey.ringSetting = rings;
-                        currentKey.plugs = "";
-                        currentKey.initalSetting = "aaa";
                         currentLookupTable =  lookupTableCreator(currentKey);
                         usedLookupTable.emplace(make_pair(currentKey.wheelOrder + currentKey.ringSetting, currentLookupTable));
                         for(l=0;l<26;l++){for(m=0;m<26;m++){for(n=0;n<26;n++){
@@ -349,11 +350,42 @@ struct enigmaKey fastRingAdjustment(enigmaKey &firstKey, string ciphertext){
 }
 
 // plugboard hill climb
+string plugboardBruteforce(enigmaKey &baseKey, string ciphertext){
+    readQuadgramsCSV();
+    int i;
+    vector<string> lookupTable = lookupTableCreator(baseKey);
+    enigmaKey currentKey = baseKey;
+    string plugs = baseKey.plugs;
+    string bestPlugs;
+    double bestFitness = 100000;
+    double currentFitness;
+    int ePair = plugs[4] -'a';
+    int aPair = plugs[0] - 'a';
+    for(i-1;i<25;i++){
+        if(i != 4 & i != ePair & i != aPair){
+            plugs = baseKey.plugs;
+            plugs[i] = alphabet[19];
+            plugs[19] = alphabet[i];
+            currentKey.plugs = plugs;
+            currentFitness = entropy(fasterEnigma(ciphertext,currentKey,lookupTable));
+            if(bestFitness > currentFitness){
+                bestFitness = currentFitness;
+                bestPlugs = plugs;
+            }
+
+        }
+    }
+    return bestPlugs;
+}
+
 string randomPlugboard(string base){
     // a new random plugboard each second
-    int i,randomValue1,randomValue2,In1,In2;
+    int i,randomValue1,randomValue2,In1,In2, aePairs = 0;
     string new_swaps = base;
-    for(i=0;i<10;i++){
+
+    if(base[0] != 'a'){aePairs += 1;}
+    if(base[4] != 'e'){aePairs += 1;}
+    for(i=0;i<10-aePairs;i++){
         In1 = In2 = 0;
         while ((In1 + In2) != 2){
             if (In1 != 1){
@@ -463,8 +495,8 @@ struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
     enigmaKey currentKey = bestKey;
     int i, stuck = 0;
     int breakFlag = 0;
-    vector<string> lookupTable = lookupTableCreator(bestKey);
-    testPlaintext = fasterEngima(ciphertext, bestKey, lookupTable);
+    vector<string> lookupTable = lookupTableCreator(currentKey);
+    testPlaintext = fasterEnigma(ciphertext, bestKey, lookupTable);
     bestFitness = quadgramFitness(testPlaintext);
     while (stuck == 0){
         stuck = 1;
@@ -475,7 +507,7 @@ struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
         for (itr = neighbours.begin(); itr != neighbours.end(); itr++) {
             if(breakFlag == 0){
                 currentKey.plugs = *itr;
-                testPlaintext = fasterEngima(ciphertext,currentKey, lookupTable);
+                testPlaintext = fasterEnigma(ciphertext,currentKey, lookupTable);
                 currentFitness = quadgramFitness(testPlaintext);
                 if(bestFitness < currentFitness){
                     bestKey = currentKey;
@@ -541,7 +573,7 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
                         if (shortLookupTable.count(searchKey) == 0){
                             shortLookupTable.emplace(make_pair(searchKey, currentLookupTable));
                         }
-                        shortKeyList.emplace(make_pair(entropy(fasterEngima(ciphertext,currentKey, currentLookupTable)), currentKey));
+                        shortKeyList.emplace(make_pair(entropy(fasterEnigma(ciphertext,currentKey, currentLookupTable)), currentKey));
                         itr++;
                     }
                     recursivePKeyTest(depth+1, newKey, ciphertext, shortKeyList, shortLookupTable);
@@ -591,6 +623,7 @@ void newOveralAlgorithm(string ciphertext, string middleRing){
 
 int main () {
     srand((unsigned) time(NULL));
+    readQuadgramsCSV();
     string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     enigmaKey testingKey;
     testingKey.wheelOrder = "321";
@@ -616,19 +649,15 @@ int main () {
     testingKey.initalSetting ="rtc";
     testingKey.plugs = "abcdrfghijklmnopqestuvwxyz";
 
-    // plugboardNeighbours("abodrtzkujhlyqcwnexfivpsmg");
 
-
-    enigmaKey adjusted = fastRingAdjustment(testingKey,testCiphertext);
-    // enigmaKey final = fastRingAdjustment(plugboardHC(adjusted,testCiphertext),testCiphertext);
-    // cout << final.wheelOrder << "\n";
-    // cout << final.initalSetting << "\n";
-    // cout << final.ringSetting << "\n";
-    // cout << final.plugs << "\n";
-    int i;
-    for(i=0; i<100;i++){
-    plugboardHC(adjusted,testCiphertext);
-    }
+    enigmaKey firstRingAdjust = fastRingAdjustment(testingKey,testCiphertext);
+    enigmaKey firstPlugAdjust = plugboardHC(firstRingAdjust,testCiphertext);
+    enigmaKey final = fastRingAdjustment(firstPlugAdjust,testCiphertext);
+    cout << final.wheelOrder << "\n";
+    cout << final.initalSetting << "\n";
+    cout << final.ringSetting << "\n";
+    cout << final.plugs << "\n";
+    cout << enigma(testCiphertext,final);
 
     cout << "done";
     return 1;
