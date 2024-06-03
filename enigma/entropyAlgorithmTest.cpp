@@ -308,9 +308,7 @@ unordered_map<string,vector<string>> rotorBruteForce(string ciphertext, string r
                                     fitness = entropy(fasterRotors(ciphertext,currentKey, currentLookupTable));
                                     rotorKeysOut.emplace(make_pair(fitness, currentKey));
                                 }}}
-                        // cout << currentKey.wheelOrder << " done\n";
                     }}}}
-                    cout << currentKey.wheelOrder[0] << " done\n";
                     }
     return usedLookupTable;
 }
@@ -488,7 +486,6 @@ struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
             }
         }
     }
-    cout << bestKey.plugs << "," << bestFitness << "\n";
     return bestKey;
 }
 
@@ -505,7 +502,9 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
     if (depth == 2){
         lock_guard<mutex> guard(mx);
         finalPlugboardResults.merge(priorKeyList);
-        cout << finalPlugboardResults.begin() -> second.ringSetting[1] << " middle ring done\n";
+        if(baseKey[25] == 'e'){
+        cout << priorKeyList.begin() -> second.ringSetting[1] << " middle ring done\n";
+        }
         return;
     }
     else if(alphabet[depthLetters[depth]] != baseKey[depthLetters[depth]]){
@@ -629,7 +628,8 @@ int main () {
 
     
     auto start = high_resolution_clock::now();
-    overheadThreads(testCiphertext);
+    // overheadThreads(testCiphertext);
+    newOveralAlgorithm(testCiphertext, "q");
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << duration.count();
