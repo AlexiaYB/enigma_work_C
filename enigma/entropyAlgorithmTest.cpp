@@ -292,6 +292,7 @@ unordered_map<string,vector<string>> rotorBruteForce(string ciphertext, string r
     enigmaKey currentKey;
     unordered_map<string,vector<string>> usedLookupTable;
     vector<string> currentLookupTable;
+    currentKey.ringSetting = rings;
 
     // wheel order
     for(i=0;i<5;i++){
@@ -300,7 +301,6 @@ unordered_map<string,vector<string>> rotorBruteForce(string ciphertext, string r
                 for (k=0;k<5;k++){
                     if (i != k && j != k){
                         currentKey.wheelOrder = to_string(i + 1) + to_string(j + 1) + to_string(k  + 1);
-                        currentKey.ringSetting = rings;
                         currentLookupTable =  lookupTableCreator(currentKey);
                         usedLookupTable.emplace(make_pair(currentKey.wheelOrder + currentKey.ringSetting, currentLookupTable));
                         for(l=0;l<26;l++){for(m=0;m<26;m++){for(n=0;n<26;n++){
@@ -558,15 +558,19 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
 }
 
 void newOveralAlgorithm(string ciphertext, string middleRings){
-    string fastRings[] = {"a","h","o","v"};
+    char fastRings[] = {'a','h','o','v'};
     multimap<double, enigmaKey> fullRotorKeys;
     int i;
+    string rings;
     unordered_map<string,vector<string>> overalLookupTable;
     unordered_map<string,vector<string>> shortLookupTable;
 
     // first bruteforce
     for(i=0;i<4;i++){
-        overalLookupTable.merge(rotorBruteForce(ciphertext, "a"+ middleRings[0] + fastRings[i], fullRotorKeys));
+        rings = "a";
+        rings += middleRings[0];
+        rings += fastRings[i];
+        overalLookupTable.merge(rotorBruteForce(ciphertext, rings, fullRotorKeys));
     }
     shortLookupTable = cullOveralLookupTable(overalLookupTable,fullRotorKeys,E);
     recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys, shortLookupTable);
@@ -582,7 +586,6 @@ void newOveralAlgorithm(string ciphertext, string middleRings){
     recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys, shortLookupTable);
     return;
 }
-
 
 enigmaKey overheadThreads(string ciphertext){
     thread t[13];
@@ -626,15 +629,19 @@ int main () {
 
     string testCiphertext = enigma(testPlaintext,testingKey);
 
+    multimap<double, enigmaKey> rotorFull;
+    unordered_map<string,vector<string>> overalLookupTable;
     
     auto start = high_resolution_clock::now();
     // overheadThreads(testCiphertext);
-    newOveralAlgorithm(testCiphertext, "q");
+    // newOveralAlgorithm(testCiphertext, "ql");
+    overalLookupTable = rotorBruteForce(testCiphertext,"aqv",rotorFull);
+    recursivePKeyTest(0,alphabet,testCiphertext,rotorFull,overalLookupTable);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     cout << duration.count();
 
-
+    outputFitnessMultimapCSV("output.csv", finalPlugboardResults);
     cout << "done";
     return 1;
 }
