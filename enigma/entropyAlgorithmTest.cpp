@@ -503,7 +503,10 @@ const int depthLetters[] = {4,0};
 const int depthSizeParameters[] = {E,A};
 void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<double, enigmaKey> &priorKeyList, unordered_map<string,vector<string>> overalLookupTable){
     if (depth == 2){
+        lock_guard<mutex> guard(mx);
         finalPlugboardResults.merge(priorKeyList);
+        cout << finalPlugboardResults.begin() -> second.ringSetting[1] << " middle ring done\n";
+        return;
     }
     else if(alphabet[depthLetters[depth]] != baseKey[depthLetters[depth]]){
         recursivePKeyTest(depth+1, baseKey, ciphertext, priorKeyList, cullOveralLookupTable(overalLookupTable,priorKeyList,depthSizeParameters[depth]));
@@ -545,9 +548,9 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
                         itr++;
                     }
                     recursivePKeyTest(depth+1, newKey, ciphertext, shortKeyList, shortLookupTable);
-                    if(depth == 0){
-                        cout << newKey << " done\n";
-                    }
+                    // if(depth == 0){
+                    //     cout << newKey << " done\n";
+                    // }
                     shortLookupTable.clear();
                 }
             }
@@ -555,36 +558,59 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
     }
 }
 
-void newOveralAlgorithm(string ciphertext, string middleRing){
+void newOveralAlgorithm(string ciphertext, string middleRings){
     string fastRings[] = {"a","h","o","v"};
     multimap<double, enigmaKey> fullRotorKeys;
     int i;
     unordered_map<string,vector<string>> overalLookupTable;
     unordered_map<string,vector<string>> shortLookupTable;
+
+    // first bruteforce
     for(i=0;i<4;i++){
-        overalLookupTable.merge(rotorBruteForce(ciphertext, "a"+ middleRing + fastRings[i], fullRotorKeys));
-         cout << "rotorbrute force " << "a"+ middleRing + fastRings[i] << " done" << "\n";
+        overalLookupTable.merge(rotorBruteForce(ciphertext, "a"+ middleRings[0] + fastRings[i], fullRotorKeys));
     }
     shortLookupTable = cullOveralLookupTable(overalLookupTable,fullRotorKeys,E);
     recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys, shortLookupTable);
+
+    fullRotorKeys.clear();
+    overalLookupTable.clear();
+    shortLookupTable.clear();
+    // second bruteforce
+    for(i=0;i<4;i++){
+        overalLookupTable.merge(rotorBruteForce(ciphertext, "a"+ middleRings[0] + fastRings[i], fullRotorKeys));
+    }
+    shortLookupTable = cullOveralLookupTable(overalLookupTable,fullRotorKeys,E);
+    recursivePKeyTest(0,alphabet,ciphertext,fullRotorKeys, shortLookupTable);
+    return;
 }
 
 
-// void overheadThreads(string ciphertext, string baseRings){
-//     string fastRings[] = {"a","h","o","v"};
-//     thread t[8];
-//     int i;
-//     // spawn
-//     for(i=0;i<4;i++){
-//         t[i] = thread(&rotorBruteForce, ciphertext,"ar" + fastRings[i]);
-//         t[4+i] = thread(&rotorBruteForce, ciphertext,"ag" + fastRings[i]);
-//     }
-//     // join
-//     for(i=0;i<8;i++){
-//         t[i].join();
-//     }
-//     return;
-// }
+enigmaKey overheadThreads(string ciphertext){
+    thread t[13];
+    int i;
+    // spawn
+    for(i=0;i<13;i++){
+        t[i] = thread(&newOveralAlgorithm, ciphertext, ""s + alphabet[i] + alphabet[i+13]);
+    }
+    // join
+    for(i=0;i<13;i++){
+        t[i].join();
+    }
+
+    // then reference & output final plugboard results 
+    outputFitnessMultimapCSV("output.csv", finalPlugboardResults);
+    enigmaKey bestKey = finalPlugboardResults.begin() ->second;
+    enigmaKey firstRingAdjust = fastRingAdjustment(bestKey,ciphertext);
+    enigmaKey firstPlugAdjust = plugboardHC(firstRingAdjust,ciphertext);
+    enigmaKey final = fastRingAdjustment(firstPlugAdjust,ciphertext);
+
+    cout << final.wheelOrder << "\n";
+    cout << final.initalSetting << "\n";
+    cout << final.ringSetting << "\n";
+    cout << final.plugs << "\n";
+    cout << enigma(ciphertext,final);
+    return final;
+}
 
 
 
@@ -602,28 +628,12 @@ int main () {
     string testCiphertext = enigma(testPlaintext,testingKey);
 
     
-    // auto start = high_resolution_clock::now();
-    // newOveralAlgorithm(testCiphertext,"q");
-    // auto stop = high_resolution_clock::now();
-    // auto duration = duration_cast<microseconds>(stop - start);
-    // cout << duration.count();
+    auto start = high_resolution_clock::now();
+    overheadThreads(testCiphertext);
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << duration.count();
 
-    // outputFitnessMultimapCSV("output.csv", finalPlugboardResults);
-
-    // post processing
-    // top key
-    testingKey.ringSetting = "aqv";
-    testingKey.initalSetting ="rtc";
-    testingKey.plugs = "abcdrfghijklmnopqestuvwxyz";
-
-    enigmaKey firstRingAdjust = fastRingAdjustment(testingKey,testCiphertext);
-    enigmaKey firstPlugAdjust = plugboardHC(firstRingAdjust,testCiphertext);
-    enigmaKey final = fastRingAdjustment(firstPlugAdjust,testCiphertext);
-    cout << final.wheelOrder << "\n";
-    cout << final.initalSetting << "\n";
-    cout << final.ringSetting << "\n";
-    cout << final.plugs << "\n";
-    cout << enigma(testCiphertext,final);
 
     cout << "done";
     return 1;
