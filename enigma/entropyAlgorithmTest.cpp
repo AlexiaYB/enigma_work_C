@@ -494,8 +494,8 @@ struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
 // overal algorithm
 
 // parameters 
-const int E = 7000;
-const int A = 700;
+const int E = 10000;
+const int A = 1000;
 
 const int depthLetters[] = {4,0};
 const int depthSizeParameters[] = {E,A};
@@ -544,9 +544,9 @@ void recursivePKeyTest(int depth, string baseKey, string ciphertext, multimap<do
                         itr++;
                     }
                     recursivePKeyTest(depth+1, newKey, ciphertext, shortKeyList, shortLookupTable);
-                    // if(depth==0){
-                    //     cout << newKey << " done\n";
-                    // }
+                    if(depth==0){
+                        cout << newKey << " done\n";
+                    }
                     shortLookupTable.clear();
                 }
             }
@@ -583,15 +583,15 @@ void newOveralAlgorithm(string ciphertext, int start, int runs){
 }
 
 enigmaKey overheadThreads(string ciphertext, string outputFile){
-    thread t[7];
+    thread t[3];
     int i;
     // spawn
-    for(i=0;i<21;i+=4){
-        t[i/4] = thread(&newOveralAlgorithm, ciphertext,i,4);
+    for(i=0;i<17;i+=9){
+        t[i/9] = thread(&newOveralAlgorithm, ciphertext,i,9);
     }
-    t[6] = thread(&newOveralAlgorithm, ciphertext,i+4,2);
+    t[2] = thread(&newOveralAlgorithm, ciphertext,i,8);
     // join
-    for(i=0;i<7;i++){
+    for(i=0;i<3;i++){
         t[i].join();
     }
 
@@ -617,7 +617,6 @@ int main () {
     srand((unsigned) time(NULL));
     enigmaKey testingKey;
     string testPlaintext, testCiphertext;
-    // short test
     testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
     testingKey.wheelOrder = "421";
     testingKey.ringSetting = "hyj";
@@ -627,22 +626,10 @@ int main () {
     testCiphertext = enigma(testPlaintext,testingKey);
     
     auto start = high_resolution_clock::now();
-    newOveralAlgorithm(testCiphertext,16,1);
-    outputFitnessMultimapCSV("output.csv", finalPlugboardResults);
+    overheadThreads(testCiphertext, "output.csv");
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<seconds>(stop - start);
     cout << duration.count() << "\n";
-
-    enigmaKey bestKey = finalPlugboardResults.begin() ->second;
-    enigmaKey firstRingAdjust = fastRingAdjustment(bestKey,testCiphertext);
-    enigmaKey firstPlugAdjust = plugboardHC(firstRingAdjust,testCiphertext);
-    enigmaKey final = fastRingAdjustment(firstPlugAdjust,testCiphertext);
-
-    cout << final.wheelOrder << "\n";
-    cout << final.initalSetting << "\n";
-    cout << final.ringSetting << "\n";
-    cout << final.plugs << "\n";
-    cout << enigma(testCiphertext,final);
 
     cout << "done";
     return 1;
