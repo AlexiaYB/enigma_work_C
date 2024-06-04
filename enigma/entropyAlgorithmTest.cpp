@@ -386,14 +386,14 @@ vector<string> plugboardNeighbours(string base){
     int ePair = base[4] - 'a';
     // create changerList
     for(i=1;i<25;i++){
-        if(i!= 4 && i!=aPair && i!=ePair){
+        // if(i!= 4 && i!=aPair && i!=ePair){
             if(base[i] == alphabet[i]){
                 selfChangerList.push_back(base[i] - 'a');
             }else if (base[i] -'a' > i){
                 vector<int> t({base[i] - 'a', i});
                 pairChangerList.push_back(t);
             }
-        }
+        // }
     }
     // use to change base
     string currentplugs;
@@ -494,8 +494,8 @@ struct enigmaKey plugboardHC(enigmaKey &firstKey,string ciphertext){
 // overal algorithm
 
 // parameters 
-const int E = 5000;
-const int A = 500;
+const int E = 7000;
+const int A = 700;
 
 const int depthLetters[] = {4,0};
 const int depthSizeParameters[] = {E,A};
@@ -563,12 +563,11 @@ void newOveralAlgorithm(string ciphertext, int start, int runs){
     unordered_map<string,vector<string>> shortLookupTable;
 
     for(j=start;j<(start+runs);j++){
-        for(i=0;i<25;i+4){
+        for(i=0;i<4;i++){
             rings = "a";
             rings += alphabet[j];
             rings += fastRings[i];
             overalLookupTable.merge(rotorBruteForce(ciphertext, rings, fullRotorKeys));
-            // cout << middleRings[0] << i << " rotorbruteforce done\n";
         }
         cout << alphabet[j] << " rotorbruteforce done\n";
         shortLookupTable = cullOveralLookupTable(overalLookupTable,fullRotorKeys,E);
@@ -587,10 +586,10 @@ enigmaKey overheadThreads(string ciphertext, string outputFile){
     thread t[7];
     int i;
     // spawn
-    for(i=0;i<24;i+=4){
+    for(i=0;i<21;i+=4){
         t[i/4] = thread(&newOveralAlgorithm, ciphertext,i,4);
     }
-    t[6] = thread(&newOveralAlgorithm, ciphertext,i,2);
+    t[6] = thread(&newOveralAlgorithm, ciphertext,i+4,2);
     // join
     for(i=0;i<7;i++){
         t[i].join();
@@ -617,38 +616,33 @@ enigmaKey overheadThreads(string ciphertext, string outputFile){
 int main () {
     srand((unsigned) time(NULL));
     enigmaKey testingKey;
-
-    // long
-    cout << "long";
-    string testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
-    testingKey.wheelOrder = "521";
-    testingKey.ringSetting = "hju";
-    testingKey.initalSetting ="kdg";
+    string testPlaintext, testCiphertext;
+    // short test
+    testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitcouldhavebeenwrittenbyanyoneinmyhouseholdyourclaimthatthecharacteristicsofthetypecanbeusedtoidentifythesourceasthetypewriterweholdinthemansionseemstometobedivinationnotscienceandwithoutmuchstrongerevidenceofalinkbetweensomeoneinmyhouseholdandtheyoungmanislesiwillnotentertainorcooperatewithanyfurtherinvestigationsihavealreadyexpressedmyconsternationattheprospectofascandalderailingmycampaignforstategovernorandithoughtthatyouunderstoodandagreedwithmewhyyouwouldwanttoreopenthecasewhenihavesomuchtoloseandwehavenothingtogainfromiticannotunderstandiknowthatmaisiehasbeenpressingforfurtherinvestigationanditisclearthatshewasdeeplydistressedbythewholeincidentshelovesthelibraryandwoulddoanythingtoprotectithoweversheismerelyaservantoftheestateandsurelymystatusaspresentownergivesgreaterweighttomyviewsandwisheswhileislesclearlytrespassedheseemsnottohavecausedanydamageandevenifhewasintendingtostealfrommehisuntimelydeathforestalledthatplanhehasalreadypaidthepriceforhismisdeedsandidonotseeanyreasontocontinuetopokeandprobeatwhatmustsurelybearoutinecaseimustinsistthatyoubringafinalhalttoyourinvestigationsandlethimrestinpeaceletusnotinvitegossipatthiscriticaltimeyoursinfriendshiprogers";
+    testingKey.wheelOrder = "321";
+    testingKey.ringSetting = "nqy";
+    testingKey.initalSetting ="etf";
     testingKey.plugs = "pbitxgfwcszmlqoanrjduvheyk";
 
-    string testCiphertext = enigma(testPlaintext,testingKey);
+    testCiphertext = enigma(testPlaintext,testingKey);
     
     auto start = high_resolution_clock::now();
-    overheadThreads(testCiphertext, "LongOutput.csv");
+    newOveralAlgorithm(testCiphertext,16,1);
+    outputFitnessMultimapCSV("output.csv", finalPlugboardResults);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<seconds>(stop - start);
     cout << duration.count() << "\n";
 
-    // short
-    cout << "short";
-    testPlaintext = "tommydearfriendiwassomewhatsurprisedandconfusedtoreceiveyourletteraskingmeaboutthenotethatdrwhitediscoveredinthebindingofthebookfoundbyislessbodyicannotseehowyoucouldthinkiwouldknowanythingaboutitandifinditextremelyunlikelythatitc";
-    testingKey.wheelOrder = "321";
-    testingKey.ringSetting = "nqy";
-    testingKey.initalSetting ="etf";
-    testingKey.plugs = "abodrtzkujhlyqcwenxfivpsmg";
+    enigmaKey bestKey = finalPlugboardResults.begin() ->second;
+    enigmaKey firstRingAdjust = fastRingAdjustment(bestKey,testCiphertext);
+    enigmaKey firstPlugAdjust = plugboardHC(firstRingAdjust,testCiphertext);
+    enigmaKey final = fastRingAdjustment(firstPlugAdjust,testCiphertext);
 
-    testCiphertext = enigma(testPlaintext,testingKey);
-    
-    start = high_resolution_clock::now();
-    overheadThreads(testCiphertext, "ShortOutput.csv");
-    stop = high_resolution_clock::now();
-    duration = duration_cast<seconds>(stop - start);
-    cout << duration.count() << "\n";
+    cout << final.wheelOrder << "\n";
+    cout << final.initalSetting << "\n";
+    cout << final.ringSetting << "\n";
+    cout << final.plugs << "\n";
+    cout << enigma(testCiphertext,final);
 
     cout << "done";
     return 1;
